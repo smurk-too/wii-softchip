@@ -1,7 +1,7 @@
 /*******************************************************************************
  * cIOS.h
  *
- * Copyright (c) 2008 Requiem (requiem@cenury-os.com)
+ * Copyright (c) 2008 Requiem (requiem@century-os.com)
  *
  * Special thanks to Waninkoko.
  *

@@ -1,7 +1,7 @@
 /*******************************************************************************
  * SoftChip.cpp
  *
- * Copyright (c) 2008 Requiem (requiem@cenury-os.com)
+ * Copyright (c) 2008 Requiem (requiem@century-os.com)
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
@@ -42,7 +42,7 @@ namespace Apploader
 	typedef void 	(*Start)	(Enter*,Load*,Exit*);
 }
 
-static void Report(const char* Args, ...){}
+// static void Report(const char* Args, ...){}	// Commented while we use printf for this
 extern "C" void __exception_closeall();
 
 //--------------------------------------
@@ -253,7 +253,7 @@ void SoftChip::Load()
 		// Get certificates from the cIOS
 		cIOS::Instance()->GetCerts(&Certs, &C_Length);
 
-		printf("System certificates at: 0x%x\n", Certs);
+		printf("System certificates at: 0x%x\n", reinterpret_cast<dword>(Certs));
 
 		// Read the buffer
 		DI->Read_Unencrypted(Buffer, 0x800, Offset);
@@ -262,14 +262,14 @@ void SoftChip::Load()
 		Ticket		= reinterpret_cast<signed_blob*>(Buffer);
 		T_Length	= SIGNED_TIK_SIZE(Ticket);
 
-		printf("Ticket at: 0x%x\n", Ticket);
+		printf("Ticket at: 0x%x\n", reinterpret_cast<dword>(Ticket));
 
 		// Get the TMD pointer
 
 		Tmd = reinterpret_cast<signed_blob*>(Buffer + 0x2c0);
 		MD_Length = SIGNED_TMD_SIZE(Tmd);
 
-		printf("Tmd at: 0x%x\n", Tmd);
+		printf("Tmd at: 0x%x\n", reinterpret_cast<dword>(Tmd));
 
 		static byte	Tmd_Buffer[0x49e4] __attribute__((aligned(0x20)));
 
@@ -337,21 +337,25 @@ void SoftChip::Load()
 
 		// Cleanup loader information
 		DI->Close();
-		WPAD_Shutdown();
-		IRQ_Disable();
-		__IOS_ShutdownSubsystems();
-		__exception_closeall();
 
-		// Branch to Application entry point
+		if (false)	// This code is disabled until we fix the apploader issue.
+		{
+			WPAD_Shutdown();
+			IRQ_Disable();
+			__IOS_ShutdownSubsystems();
+			__exception_closeall();
 
-		__asm__ __volatile__
-		(
-			"mtlr %0;"			// Move the entry point into link register
-			"blr"				// Branch to address in link register
-			:					// No output registers
-			:	"r" (Entry)		// Input register
-			:	"3"
-		);
+			// Branch to Application entry point
+
+			__asm__ __volatile__
+			(
+					"mtlr %0;"			// Move the entry point into link register
+					"blr"				// Branch to address in link register
+					:					// No output registers
+					:	"r" (Entry)		// Input register
+					:
+			);
+		}
 	}
 	catch (const char* Message)
 	{

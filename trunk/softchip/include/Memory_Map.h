@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Memory_Map.h
  *
- * Copyright (c) 2008 Requiem (requiem@cenury-os.com)
+ * Copyright (c) 2008 Requiem (requiem@century-os.com)
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
@@ -22,7 +22,7 @@
 
 typedef unsigned char		byte;
 typedef unsigned short		word;
-typedef unsigned long		dword;
+typedef unsigned int		dword;
 typedef unsigned long long	qword;
 
 namespace Memory

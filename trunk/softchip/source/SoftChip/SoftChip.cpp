@@ -58,6 +58,8 @@ namespace Apploader
 SoftChip::SoftChip()
 {
 	DI							= DIP::Instance();
+	Standby_Flag				= false;
+	Reset_Flag					= false;
 
 	void		*framebuffer	= 0;
 	GXRModeObj	*vmode			= 0;
@@ -128,7 +130,7 @@ SoftChip::~SoftChip(){}
 
 void SoftChip::Standby()
 {
-	STM_ShutdownToStandby();
+	SoftChip::Instance()->Standby_Flag = true;
 }
 
 /*******************************************************************************
@@ -141,7 +143,7 @@ void SoftChip::Standby()
 
 void SoftChip::Reboot()
 {
-	STM_RebootSystem();
+	SoftChip::Instance()->Reset_Flag = true;
 }
 
 
@@ -170,6 +172,17 @@ void SoftChip::Run()
 		if ((Buttons & WPAD_BUTTON_A) || (GC_Buttons & PAD_BUTTON_A))
 		{
 			Load_Disc();
+		}
+
+		if (Standby_Flag)
+		{
+			WPAD_Shutdown();
+			STM_ShutdownToStandby();
+		}
+
+		else if (Reset_Flag)
+		{
+			STM_RebootSystem();
 		}
 
 		VIDEO_WaitVSync();

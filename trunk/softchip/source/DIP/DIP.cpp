@@ -206,7 +206,7 @@ int DIP::Read_Unencrypted(void* Buffer, unsigned int size, unsigned int offset)
 }
 
 /*******************************************************************************
- * Wait_CoverCose: Waits for the drive to announce cover is closed
+ * Wait_CoverClose: Waits for the drive to announce cover is closed
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns result of Ioctl command

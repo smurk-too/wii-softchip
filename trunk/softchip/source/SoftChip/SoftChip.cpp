@@ -340,6 +340,9 @@ void SoftChip::Load()
 
 		if (false)	// This code is disabled until we fix the apploader issue.
 		{
+			// TODO: Evaluate this call, as per waninkoko's advice
+			// SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+
 			WPAD_Shutdown();
 			IRQ_Disable();
 			__IOS_ShutdownSubsystems();

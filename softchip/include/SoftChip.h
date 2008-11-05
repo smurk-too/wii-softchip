@@ -33,7 +33,7 @@ private:
 	static void Standby();				// Put the console into standby
 	static void Reboot();				// Return to system menu
 
-	void Load();						// Loads the disc
+	void Load_Disc();					// Loads the disc
 
 protected:
 	SoftChip();

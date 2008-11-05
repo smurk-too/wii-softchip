@@ -43,7 +43,6 @@ namespace Apploader
 }
 
 // static void Report(const char* Args, ...){}	// Commented while we use printf for this
-extern "C" void __exception_closeall();
 
 //--------------------------------------
 // SoftChip Class
@@ -170,7 +169,7 @@ void SoftChip::Run()
 
 		if ((Buttons & WPAD_BUTTON_A) || (GC_Buttons & PAD_BUTTON_A))
 		{
-			Load();
+			Load_Disc();
 		}
 
 		VIDEO_WaitVSync();
@@ -179,13 +178,13 @@ void SoftChip::Run()
 }
 
 /*******************************************************************************
- * Load: Loads a Wii Disc
+ * Load_Disc: Loads a Wii Disc
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns void
  *
  ******************************************************************************/
-void SoftChip::Load()
+void SoftChip::Load_Disc()
 {
 	static Wii_Disc::Header					Header			__attribute__((aligned(0x20)));
 	static Wii_Disc::Partition_Descriptor	Descriptor		__attribute__((aligned(0x20)));
@@ -200,8 +199,8 @@ void SoftChip::Load()
 		DI->Wait_CoverClose();
 		DI->Reset();
 
-		memset((char*)0x80000000, 0, 6);
-		DI->Read_DiscID((unsigned long long*)0x80000000);
+		memset(reinterpret_cast<void*>(Memory::Disc_ID), 0, 6);
+		DI->Read_DiscID(reinterpret_cast<qword*>(Memory::Disc_ID));
 
 		// Read header & process info
 		DI->Read_Unencrypted(&Header, 0x800, 0);
@@ -274,8 +273,7 @@ void SoftChip::Load()
 		static byte	Tmd_Buffer[0x49e4] __attribute__((aligned(0x20)));
 
 		// Open Partition
-		int ret = DI->Open_Partition(Partition_Info.Offset, 0,0,0, Tmd_Buffer);
-		if (ret < 0)
+		if (DI->Open_Partition(Partition_Info.Offset, 0,0,0, Tmd_Buffer) < 0)
 		{
 			printf("[-] Error opening partition.\n\n");
 			return;
@@ -291,7 +289,7 @@ void SoftChip::Load()
 		DCFlushRange(Header, 0x20);
 
 		// Read apploader.bin
-		unsigned int Payload_Length = ((*(unsigned int*)(Header + 0x14) + 0x1f) & ~0x1f);
+		unsigned int Payload_Length = ((*reinterpret_cast<dword*>((Header + 0x14)) + 0x1f) & ~0x1f);
 		printf("Payload size: 0x%x bytes.\n",Payload_Length);
 
 		printf("Reading payload.\n");
@@ -305,7 +303,7 @@ void SoftChip::Load()
 		Apploader::Load		Load;
 		Apploader::Exit		Exit;
 
-		Apploader::Start Start = (*(Apploader::Start*)((int)Header + 0x10));
+		Apploader::Start Start = (*(Apploader::Start*)(reinterpret_cast<int>(Header) + 0x10));
 		Start(&Enter, &Load, &Exit);
 		printf("Apploader pointers set.\n");
 
@@ -321,6 +319,7 @@ void SoftChip::Load()
 		// Read information from disc
 		while (Load(&Dest, &Size, &Loader_Offset))
 		{
+			// Here is where the problem is...  Dest shouldn't be zero.
 			if (!Dest) throw ("Null pointer from apploader.");
 			if (DI->Read(Dest, Size, Loader_Offset << 2) < 0) throw ("Disc read error");
 			DCFlushRange(Dest, Size);
@@ -328,7 +327,11 @@ void SoftChip::Load()
 			// This would be a good time to patch video / region / language
 		}
 
-		printf("done.\n");
+		printf("done.\n\n");
+
+		printf("If you've gotten here, you've obviously found a way past the\n");
+		printf("issue with the apploader.  Please fill out a report on the");
+		printf("project site: http://code.google.com/p/wii-softchip/\n\n");
 
 		// TODO: Patch in missing info from reads
 
@@ -341,12 +344,7 @@ void SoftChip::Load()
 		if (false)	// This code is disabled until we fix the apploader issue.
 		{
 			// TODO: Evaluate this call, as per waninkoko's advice
-			// SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
-
-			WPAD_Shutdown();
-			IRQ_Disable();
-			__IOS_ShutdownSubsystems();
-			__exception_closeall();
+			SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 
 			// Branch to Application entry point
 
@@ -362,7 +360,7 @@ void SoftChip::Load()
 	}
 	catch (const char* Message)
 	{
-		printf("Exception: %s", Message);
+		printf("Exception: %s\n", Message);
 		return;
 	}
 }

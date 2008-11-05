@@ -33,14 +33,23 @@ namespace Memory
 		Disc_Magic		= 0x80000018,
 		Sys_Magic		= 0x80000020,
 		Version			= 0x80000024,
+		Mem_Size		= 0x80000028,
+		Board_Model		= 0x8000002c,
+		Arena_Bottom	= 0x80000030,
 		Arena_L			= 0x80000034,
 		Arena_H			= 0x80000038,
 		Max_FST			= 0x8000003c,
+		Simulated_Mem	= 0x800000f0,
 		BI2				= 0x800000f4,
 		Bus_Speed		= 0x800000f8,
 		CPU_Speed		= 0x800000fc,
+		Dol_Params		= 0x800030f0,
+		IOS_Heap		= 0x80003130,
+		Hollywood_Version	= 0x80003138,
+		IOS_Version		= 0x80003140,
+		DDR_Vendor		= 0x80003158,
+		Offline_Check	= 0x80003180,
 		Apploader_Head	= 0x81000000,
-		Apploader		= 0x81200000,
-		Unk_Bus_Speed	= 0xcd00643c
+		Apploader		= 0x81200000
 	};
 }

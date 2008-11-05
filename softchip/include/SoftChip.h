@@ -25,6 +25,8 @@ class SoftChip
 {
 protected:
 	DIP*	DI;							// DIP interface
+	bool	Standby_Flag;				// Flag is set when power button is pressed
+	bool	Reset_Flag;					// Flag is set when reset button is pressed
 
 public:
 	void Run();							// Main function

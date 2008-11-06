@@ -340,8 +340,9 @@ void SoftChip::Load_Disc()
 		*(dword*)Memory::Bus_Speed	= 0x0E7BE2C0;
 		*(dword*)Memory::CPU_Speed	= 0x2B73A840;
 
-		// Retrieve dol entry point
-		DCFlushRange((void*)0x80000000,0x17ff000);
+		// Flush application memory range
+
+		DCFlushRange((void*)0x80000000,0x17ff000);	// TODO: Remove these hardcoded values
 		void* Entry = Exit();
 
 		printf("Launching Application!\n\n");

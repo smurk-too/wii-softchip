@@ -84,7 +84,23 @@ SoftChip::SoftChip()
 	DI->Initialize();
 }
 
+/*******************************************************************************
+ * ~SoftChip: Default destructor
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
 SoftChip::~SoftChip(){}
+
+/*******************************************************************************
+ * Set_VideoMode: Sets the video mode based on the region of the disc
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
 
 void SoftChip::Set_VideoMode(char Region)
 {
@@ -97,17 +113,19 @@ void SoftChip::Set_VideoMode(char Region)
 		case Wii_Disc::Regions::PAL_Germany:
 		case Wii_Disc::Regions::Euro_X:
 		case Wii_Disc::Regions::Euro_Y:
-			*(char*)Memory::Video_Mode = (char)Video::Modes::PAL;
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
 			vmode = &TVPal528IntDf;
 			break;
 
 		case Wii_Disc::Regions::NTSC_USA:
 		case Wii_Disc::Regions::NTSC_Japan:
-			*(char*)Memory::Video_Mode = (char)Video::Modes::NTSC;
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
 			vmode = &TVNtsc480IntDf;
 			break;
+
 		default:
 			vmode		= VIDEO_GetPreferredMode(0);
+			break;
 	}
 
 	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));

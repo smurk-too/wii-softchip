@@ -1,0 +1,3 @@
+#Sun Nov 02 01:03:19 EST 2008
+eclipse.preferences.version=1
+environment/project/0.207634144=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?>\n<environment append\="true" appendContributed\="true">\n<variable delimiter\=";" name\="DEVKITPPC" operation\="append" value\="/opt/devkitpro/devkitPPC"/>\n<variable delimiter\=";" name\="DEVKITPRO" operation\="append" value\="/opt/devkitpro"/>\n</environment>\n

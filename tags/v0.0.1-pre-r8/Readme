@@ -1,0 +1,48 @@
+/*******************************************************************************
+ * SoftChip v0.0.1-alpha
+ *
+ * Copyright (c) 2008 by various respective authors.
+ *
+ * If I have failed to include your name, or if you do not wish to be listed
+ * under "Credits", please inform me via email at <requiem@century-os.com>.
+ *
+ ******************************************************************************/
+
+ 
+1.) What is SoftChip?
+--------------------------------------------------------------------------------
+SoftChip is a piece of homebrew software designed to allow you to play your 1:1
+backup games on your Nintendo Wii.
+
+2.) Why do I need this?
+--------------------------------------------------------------------------------
+If you have a hardware-based modchip, you don't.  This is designed for those who
+don't necessarily have the technical abilites or money to have one installed in
+their wii.
+
+3.) What about piracy?
+--------------------------------------------------------------------------------
+I DO NOT condone piracy and will not answer any questions for suspected pirates.
+That being said, this will be one of those controversial softwares that allow
+the pirates to do "their thing."  Hopefully this will discourage it a small bit.
+
+Know this: It's technically possible to load an application onto a "fake" wii
+disc that will overwrite your NAND, and brick your wii.  Happy now?  Good.  The
+bottom line is - If you didn't dump your copies, don't run them.
+ 
+Game Developers get paid when the software they've written sells.  If they
+don't get paid, they don't write any more games.
+ 
+The pirates are ruining it for everybody.
+ 
+4.) How do I install / run this?
+-------------------------------------------------------------------------------
+As early as it is in the development cycle, the official answer is this:
+ 
+If you don't already know HOW to run this, you shouldn't be running it.  Wait
+for a non-alpha or non-beta release.
+ 
+5.) Is this software safe?
+--------------------------------------------------------------------------------
+As safe as a program designed to load and run another program can be.  Meaning
+it's only safe as the software you load with it is. 

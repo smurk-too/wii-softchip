@@ -111,28 +111,21 @@ s32 cIOS::Identify()
 
 s32 cIOS::GetCerts(signed_blob** Certs, u32* Length)
 {
-	signed_blob*	Cert	= NULL;
+	static unsigned char		Cert[CERTS_SIZE] __attribute__((aligned(0x20)));
+	memset(Cert, 0, CERTS_SIZE);
 	s32				fd, ret;
 
 	fd = IOS_Open(certs_fs, ISFS_OPEN_READ);
 	if (fd < 0) return fd;
 
-	Cert = (signed_blob*)memalign(32,CERTS_SIZE);
-	if (!Cert)
-	{
-		if (fd >0) IOS_Close(fd);
-		return IPC_ENOMEM;
-	}
-
 	ret = IOS_Read(fd, Cert, CERTS_SIZE);
 	if (ret < 0)
 	{
-		if (Cert) free(Cert);
 		if (fd >0) IOS_Close(fd);
 		return ret;
 	}
 
-	*Certs = Cert;
+	*Certs = reinterpret_cast<signed_blob*>(Cert);
 	*Length = CERTS_SIZE;
 
 	if (fd > 0) IOS_Close(fd);

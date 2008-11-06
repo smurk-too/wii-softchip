@@ -17,7 +17,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <ogcsys.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <ogc/lwp_watchdog.h>
@@ -31,7 +30,7 @@
 
 #include "SoftChip.h"
 
-static void Report(const char* Args, ...){}		// Blank apploader reporting function
+// static void Silent_Report(const char* Args, ...){}		// Blank apploader reporting function
 
 //--------------------------------------
 // SoftChip Class
@@ -49,9 +48,9 @@ SoftChip::SoftChip()
 	DI							= DIP::Instance();
 	Standby_Flag				= false;
 	Reset_Flag					= false;
+	framebuffer					= 0;
+	vmode						= 0;
 
-	void		*framebuffer	= 0;
-	GXRModeObj	*vmode			= 0;
 	int			IOS_Version		= 249;
 	bool		IOS_Loaded		= false;
 
@@ -62,29 +61,7 @@ SoftChip::SoftChip()
 	IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
 
 	// Initialize Video
-	vmode		= VIDEO_GetPreferredMode(0);
-	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
-
-	// Set console paramaters
-	int x, y, w, h;
-	x = 40;
-	y = 40;
-
-	w = vmode->fbWidth		- (x * 2);		// Center the console
-	h = vmode->xfbHeight	- (y + 20);		// Offset the bottom
-
-	CON_InitEx(vmode, x, y, w, h);			// Initialize the console
-
-	VIDEO_Configure(vmode);
-	VIDEO_SetNextFramebuffer(framebuffer);
-	VIDEO_SetBlack(false);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-
-	if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
-
-	// Clear the garbage around the edges of the console
-	VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
+	Set_VideoMode(0);
 
 	// Initialize Input
 	PAD_Init();
@@ -108,6 +85,54 @@ SoftChip::SoftChip()
 }
 
 SoftChip::~SoftChip(){}
+
+void SoftChip::Set_VideoMode(char Region)
+{
+	// TODO: Some exception handling is needed here
+
+	switch (Region)
+	{
+		case Wii_Disc::Regions::PAL_Default:
+		case Wii_Disc::Regions::PAL_France:
+		case Wii_Disc::Regions::PAL_Germany:
+		case Wii_Disc::Regions::Euro_X:
+		case Wii_Disc::Regions::Euro_Y:
+			*(char*)Memory::Video_Mode = (char)Video::Modes::PAL;
+			vmode = &TVPal528IntDf;
+			break;
+
+		case Wii_Disc::Regions::NTSC_USA:
+		case Wii_Disc::Regions::NTSC_Japan:
+			*(char*)Memory::Video_Mode = (char)Video::Modes::NTSC;
+			vmode = &TVNtsc480IntDf;
+			break;
+		default:
+			vmode		= VIDEO_GetPreferredMode(0);
+	}
+
+	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+
+	// Set console paramaters
+	int x, y, w, h;
+	x = 40;
+	y = 40;
+
+	w = vmode->fbWidth		- (x * 2);		// Center the console
+	h = vmode->xfbHeight	- (y + 20);		// Offset the bottom
+
+	CON_InitEx(vmode, x, y, w, h);			// Initialize the console
+
+	VIDEO_Configure(vmode);
+	VIDEO_SetNextFramebuffer(framebuffer);
+	VIDEO_SetBlack(false);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+
+	if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
+
+	// Clear the garbage around the edges of the console
+	VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
+}
 
 /*******************************************************************************
  * Standby: Put the console in standby mode
@@ -309,9 +334,22 @@ void SoftChip::Load_Disc()
 		Apploader::Load		Load	= 0;
 		Apploader::Exit		Exit	= 0;
 
+		// Grab function pointers from apploader
+		printf("Retrieving function pointers from apploader.\n");
+		Start(&Enter, &Load, &Exit);
+
+		/*
+		 * This is what's causing the apploader errors.
+		 * We should be able to report, but it isn't working.
+		 * Probably an alignment issue.
+		 *
+
 		// Set reporting callback
 		printf("Setting reporting callback.\n");
-		Start(&Enter, &Load, &Exit);
+		Apploader::Report Report = (Apploader::Report)printf;
+		Enter(Report);
+
+		*/
 
 		// Read fst, bi2, and main.dol information from disc
 
@@ -334,18 +372,22 @@ void SoftChip::Load_Disc()
 
 		// Patch in info missing from apploader reads
 
-		*(dword*)Memory::Sys_Magic	= 0x0d15ea53;
+		*(dword*)Memory::Sys_Magic	= 0x0d15ea5e;
 		*(dword*)Memory::Version	= 1;
 		*(dword*)Memory::Arena_L	= 0x00000000;
 		*(dword*)Memory::Bus_Speed	= 0x0E7BE2C0;
 		*(dword*)Memory::CPU_Speed	= 0x2B73A840;
 
-		// Flush application memory range
-
-		DCFlushRange((void*)0x80000000,0x17ff000);	// TODO: Remove these hardcoded values
+		// Retrieve application entry point
 		void* Entry = Exit();
 
 		printf("Launching Application!\n\n");
+
+		// Set video mode for discs native region
+		Set_VideoMode(*(char*)Memory::Disc_Region);
+
+		// Flush application memory range
+		DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values
 
 		// Cleanup loader information
 		DI->Close();

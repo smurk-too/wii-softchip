@@ -16,6 +16,7 @@
 //--------------------------------------
 // Includes
 
+#include <ogcsys.h>
 #include "DIP.h"
 
 //--------------------------------------
@@ -24,9 +25,11 @@
 class SoftChip
 {
 protected:
-	DIP*	DI;							// DIP interface
-	bool	Standby_Flag;				// Flag is set when power button is pressed
-	bool	Reset_Flag;					// Flag is set when reset button is pressed
+	DIP*		DI;							// DIP interface
+	bool		Standby_Flag;				// Flag is set when power button is pressed
+	bool		Reset_Flag;					// Flag is set when reset button is pressed
+	GXRModeObj* vmode;
+	void*		framebuffer;
 
 public:
 	void Run();							// Main function
@@ -35,7 +38,8 @@ private:
 	static void Standby();				// Put the console into standby
 	static void Reboot();				// Return to system menu
 
-	void Load_Disc();					// Loads the disc
+	void 	Load_Disc();					// Loads the disc
+	void	Set_VideoMode(char Region);
 
 protected:
 	SoftChip();

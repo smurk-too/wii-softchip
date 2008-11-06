@@ -26,23 +26,12 @@
 
 #include "Memory_Map.h"
 #include "WiiDisc.h"
+#include "Apploader.h"
 #include "cIOS.h"
 
 #include "SoftChip.h"
 
-namespace Apploader
-{
-	const dword Header	= 0x2440;		// Offset into the partition to apploader header
-	const dword Payload	= 0x2460;		// Offset into the partition to apploader payload
-
-	typedef void 	(*Report)	(const char*, ...);
-	typedef void 	(*Enter)	(Report);
-	typedef int 	(*Load)		(void** Dest, int* Size, int* Offset);
-	typedef void* 	(*Exit)		();
-	typedef void 	(*Start)	(Enter*,Load*,Exit*);
-}
-
-// static void Report(const char* Args, ...){}	// Commented while we use printf for this
+static void Report(const char* Args, ...){}		// Blank apploader reporting function
 
 //--------------------------------------
 // SoftChip Class
@@ -157,6 +146,7 @@ void SoftChip::Reboot()
 
 void SoftChip::Run()
 {
+	printf("Press the (A) button to continue.\n\n");
 	while (true)
 	{
 		// TODO: Wrap this into an input class
@@ -226,7 +216,7 @@ void SoftChip::Load_Disc()
 		printf("Disc Title: %s\n", Header.Title);
 
 		// Read partition descriptor and get offset to partition info
-		dword Offset = 0x00040000;
+		dword Offset = Wii_Disc::Offsets::Descriptor;
 		DI->Read_Unencrypted(&Descriptor, sizeof(Wii_Disc::Partition_Descriptor), Offset);
 
 		Offset = Descriptor.Primary_Offset << 2;
@@ -294,82 +284,85 @@ void SoftChip::Load_Disc()
 
 		printf("[+] Partition opened successfully.\n");
 
-		// Read apploader.bin header from 0x2440
-		byte* Header = reinterpret_cast<byte*>(Memory::Apploader_Head);
+		// Read apploader header from 0x2440
 
-		printf("Reading apploader... ");
-		DI->Read(Header, 0x20, Apploader::Header);
-		DCFlushRange(Header, 0x20);
+		static Apploader::Header Loader __attribute__((aligned(0x20)));
+		printf("Reading apploader header.\n");
+		DI->Read(&Loader, sizeof(Apploader::Header), Wii_Disc::Offsets::Apploader);
+		DCFlushRange(&Loader, 0x20);
 
-		// Read apploader.bin
-		unsigned int Payload_Length = ((*reinterpret_cast<dword*>((Header + 0x14)) + 0x1f) & ~0x1f);
-		printf("Payload size: 0x%x bytes.\n",Payload_Length);
+		printf("Payload Information:\n");
+		printf("\tRevision:\t%s\n", Loader.Revision);
+		printf("\tEntry:\t0x%x\n", (int)Loader.Entry_Point);
+		printf("\tSize:\t%d bytes\n", Loader.Size);
+		printf("\tTrailer:\t%d bytes\n\n", Loader.Trailer_Size);
 
 		printf("Reading payload.\n");
-		byte* Payload = reinterpret_cast<byte*>(Memory::Apploader);
-		DI->Read(Payload, Payload_Length, Apploader::Payload);
-		DCFlushRange(Payload, Payload_Length);
 
-		// Get entry address from memory
+		// Read apploader.bin
+		DI->Read((void*)Memory::Apploader,Loader.Size + Loader.Trailer_Size, Wii_Disc::Offsets::Apploader + 0x20);
+		DCFlushRange((void*)(((int)&Loader) + 0x20),Loader.Size + Loader.Trailer_Size);
 
-		Apploader::Enter	Enter;
-		Apploader::Load		Load;
-		Apploader::Exit		Exit;
+		// Set up loader function pointers
+		Apploader::Start	Start	= Loader.Entry_Point;
+		Apploader::Enter	Enter	= 0;
+		Apploader::Load		Load	= 0;
+		Apploader::Exit		Exit	= 0;
 
-		Apploader::Start Start = (*(Apploader::Start*)(reinterpret_cast<int>(Header) + 0x10));
+		// Set reporting callback
+		printf("Setting reporting callback.\n");
 		Start(&Enter, &Load, &Exit);
-		printf("Apploader pointers set.\n");
 
-		// Run Enter to set reporting callback
-		Apploader::Report Print = (Apploader::Report)&printf;
-		Enter(Print);
-		printf("Report callback set.  Loading system files... \n\n");
+		// Read fst, bi2, and main.dol information from disc
 
-		void* Dest = 0;
-		int Size = 0;
-		int Loader_Offset = 0;
+		void*	Address = 0;
+		int		Section_Size;
+		int		Partition_Offset;
 
-		// Read information from disc
-		while (Load(&Dest, &Size, &Loader_Offset))
+		printf("Loading.\t\t\n");
+		while(Load(&Address, &Section_Size, &Partition_Offset))
 		{
-			// Here is where the problem is...  Dest shouldn't be zero.
-			if (!Dest) throw ("Null pointer from apploader.");
-			if (DI->Read(Dest, Size, Loader_Offset << 2) < 0) throw ("Disc read error");
-			DCFlushRange(Dest, Size);
+			printf(".");
 
-			// This would be a good time to patch video / region / language
+			if (!Address) throw ("Null pointer from apploader");
+
+			DI->Read(Address, Section_Size, Partition_Offset << 2);
+			DCFlushRange(Address, Section_Size);
+			// NOTE: This would be the ideal time to patch main.dol
+
 		}
 
-		printf("done.\n\n");
+		// Patch in info missing from apploader reads
 
-		printf("If you've gotten here, you've obviously found a way past the\n");
-		printf("issue with the apploader.  Please fill out a report on the");
-		printf("project site: http://code.google.com/p/wii-softchip/\n\n");
+		*(dword*)Memory::Sys_Magic	= 0x0d15ea53;
+		*(dword*)Memory::Version	= 1;
+		*(dword*)Memory::Arena_L	= 0x00000000;
+		*(dword*)Memory::Bus_Speed	= 0x0E7BE2C0;
+		*(dword*)Memory::CPU_Speed	= 0x2B73A840;
 
-		// TODO: Patch in missing info from reads
+		// Retrieve dol entry point
+		DCFlushRange((void*)0x80000000,0x17ff000);
+		void* Entry = Exit();
 
-		// Retrieve entry point
-		dword Entry = (dword)Exit();
+		printf("Launching Application!\n\n");
 
 		// Cleanup loader information
 		DI->Close();
 
-		if (false)	// This code is disabled until we fix the apploader issue.
-		{
-			// TODO: Evaluate this call, as per waninkoko's advice
-			SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+		// Shutdown libogc services
+		SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 
-			// Branch to Application entry point
+		// Branch to Application entry point
 
-			__asm__ __volatile__
-			(
-					"mtlr %0;"			// Move the entry point into link register
-					"blr"				// Branch to address in link register
-					:					// No output registers
-					:	"r" (Entry)		// Input register
-					:
-			);
-		}
+		__asm__ __volatile__
+		(
+				"mtlr %0;"			// Move the entry point into link register
+				"blr"				// Branch to address in link register
+				:					// No output registers
+				:	"r" (Entry)		// Input register
+				:
+		);
+
 	}
 	catch (const char* Message)
 	{

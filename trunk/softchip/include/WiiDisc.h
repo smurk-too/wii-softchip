@@ -60,4 +60,10 @@ struct Partition_Info
 	dword	Type;
 };
 
+namespace Offsets
+{
+	const dword Descriptor	= 0x00040000;		// Offset into disc to partition descriptor
+	const dword Apploader	= 0x00002440;		// Offset into the partition to apploader header
+}
+
 }

@@ -130,7 +130,7 @@ void SoftChip::Set_VideoMode(char Region)
 
 	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 
-	// Set console paramaters
+	// Set console parameters
 	int x, y, w, h;
 	x = 40;
 	y = 40;

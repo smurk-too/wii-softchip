@@ -26,21 +26,6 @@
 
 namespace Wii_Disc
 {
-
-namespace Regions
-{
-	enum
-	{
-		PAL_Default	= 'P',
-		PAL_Germany	= 'D',
-		PAL_France	= 'F',
-		Euro_X		= 'X',
-		Euro_Y		= 'Y',
-		NTSC_USA	= 'E',
-		NTSC_Japan	= 'J'
-	};
-}
-
 struct Header
 {
 	dword	ID;

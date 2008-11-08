@@ -61,7 +61,7 @@ SoftChip::SoftChip()
 	IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
 
 	// Initialize Video
-	Set_VideoMode(0);
+	Set_VideoMode();
 
 	// Initialize Input
 	PAD_Init();
@@ -95,36 +95,37 @@ SoftChip::SoftChip()
 SoftChip::~SoftChip(){}
 
 /*******************************************************************************
- * Set_VideoMode: Sets the video mode based on the region of the disc
+ * Set_VideoMode: Sets the video mode
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns void
  *
  ******************************************************************************/
 
-void SoftChip::Set_VideoMode(char Region)
+void SoftChip::Set_VideoMode()
 {
-	// TODO: Some exception handling is needed here
 
-	switch (Region)
+	vmode = VIDEO_GetPreferredMode(0);
+
+	switch (vmode->viTVMode >> 2)
 	{
-		case Wii_Disc::Regions::PAL_Default:
-		case Wii_Disc::Regions::PAL_France:
-		case Wii_Disc::Regions::PAL_Germany:
-		case Wii_Disc::Regions::Euro_X:
-		case Wii_Disc::Regions::Euro_Y:
+		case VI_PAL:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
 			vmode = &TVPal528IntDf;
 			break;
 
-		case Wii_Disc::Regions::NTSC_USA:
-		case Wii_Disc::Regions::NTSC_Japan:
+		case VI_NTSC:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
-			vmode = &TVNtsc480IntDf;
+
+			if (VIDEO_HaveComponentCable())
+				vmode = &TVNtsc480Prog;
+			else
+				vmode = &TVNtsc480IntDf;
 			break;
 
-		default:
-			vmode		= VIDEO_GetPreferredMode(0);
+		case VI_MPAL:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
+			vmode = &TVMpal480IntDf;
 			break;
 	}
 
@@ -400,9 +401,6 @@ void SoftChip::Load_Disc()
 		void* Entry = Exit();
 
 		printf("Launching Application!\n\n");
-
-		// Set video mode for discs native region
-		Set_VideoMode(*(char*)Memory::Disc_Region);
 
 		// Flush application memory range
 		DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values

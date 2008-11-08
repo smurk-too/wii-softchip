@@ -61,7 +61,7 @@ SoftChip::SoftChip()
 	IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
 
 	// Initialize Video
-	Set_VideoMode();
+	Set_VideoMode(0);
 
 	// Initialize Input
 	PAD_Init();
@@ -95,34 +95,36 @@ SoftChip::SoftChip()
 SoftChip::~SoftChip(){}
 
 /*******************************************************************************
- * Set_VideoMode: Sets the video mode
+ * Set_VideoMode: Sets the video mode based on the region of the disc
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns void
  *
  ******************************************************************************/
 
-void SoftChip::Set_VideoMode()
+void SoftChip::Set_VideoMode(char Region)
 {
+	// TODO: Some exception handling is needed here
 
-	vmode = VIDEO_GetPreferredMode(0);
-
-	switch (CONF_GetVideo())
+	switch (Region)
 	{
-		case CONF_VIDEO_NTSC:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
-			break;
-
-		case CONF_VIDEO_PAL:
+		case Wii_Disc::Regions::PAL_Default:
+		case Wii_Disc::Regions::PAL_France:
+		case Wii_Disc::Regions::PAL_Germany:
+		case Wii_Disc::Regions::Euro_X:
+		case Wii_Disc::Regions::Euro_Y:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
+			vmode = &TVPal528IntDf;
 			break;
 
-		case CONF_VIDEO_MPAL:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::MPAL;
+		case Wii_Disc::Regions::NTSC_USA:
+		case Wii_Disc::Regions::NTSC_Japan:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
+			vmode = &TVNtsc480IntDf;
 			break;
 
 		default:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
+			vmode		= VIDEO_GetPreferredMode(0);
 			break;
 	}
 
@@ -398,6 +400,9 @@ void SoftChip::Load_Disc()
 		void* Entry = Exit();
 
 		printf("Launching Application!\n\n");
+
+		// Set video mode for discs native region
+		Set_VideoMode(*(char*)Memory::Disc_Region);
 
 		// Flush application memory range
 		DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values

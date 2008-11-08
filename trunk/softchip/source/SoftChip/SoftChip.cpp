@@ -127,8 +127,8 @@ void SoftChip::Set_VideoMode()
 			vmode = &TVMpal480IntDf;
 			break;
 
-		case VI_EURGB60:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
+		default:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
 			break;
 	}
 

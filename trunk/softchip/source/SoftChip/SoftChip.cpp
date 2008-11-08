@@ -2,6 +2,7 @@
  * SoftChip.cpp
  *
  * Copyright (c) 2008 Requiem (requiem@century-os.com)
+ * Copyright (c) 2008 luccax
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
@@ -61,7 +62,22 @@ SoftChip::SoftChip()
 	IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
 
 	// Initialize Video
-	Set_VideoMode(false);
+	vmode = VIDEO_GetPreferredMode(0);
+	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+
+	// Set console parameters
+	int x, y, w, h;
+	x = 40;
+	y = 40;
+
+	w = vmode->fbWidth - (x * 2);
+	h = vmode->xfbHeight - (y + 20);
+
+	// Initialize the console - CON_InitEx was the problem with stev418
+	CON_Init(framebuffer, x, y, w, h, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
+
+	// Clear the garbage around the edges of the console
+	VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
 
 	// Initialize Input
 	PAD_Init();
@@ -95,36 +111,20 @@ SoftChip::SoftChip()
 SoftChip::~SoftChip(){}
 
 /*******************************************************************************
- * Set_VideoMode: Sets the video mode based on the region of the disc
+ * Set_VideoMode: Forces the video mode based on current system settings
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns void
  *
  ******************************************************************************/
 
-void SoftChip::Set_VideoMode(bool LoadingGame)
+void SoftChip::Set_VideoMode()
 {
 	// TODO: Some exception handling is needed here
 	// The VideoMode is set in two phases, when starting SoftChip (LoadingGame == false)
 	// and when booting the game (LoadingGame == true)
 
-	if (!LoadingGame)
-	{
-		vmode = VIDEO_GetPreferredMode(0);
-		framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
-
-		// Set console parameters
-		int x, y, w, h;
-		x = 40;
-		y = 40;
-
-		w = vmode->fbWidth - (x * 2);
-		h = vmode->xfbHeight - (y + 20);
-
-		// Initialize the console - CON_InitEx was the problem with stev418
-		CON_Init(framebuffer, x, y, w, h, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
-	}
-	else if (CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable()) // 480p
+	if (CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable()) // 480p
 	{
 		vmode = &TVNtsc480Prog;
 	}
@@ -137,32 +137,24 @@ void SoftChip::Set_VideoMode(bool LoadingGame)
 
 	if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
 
-	if (!LoadingGame)
+	// Set Video_Move based on system settings
+	switch (VIDEO_GetCurrentTvMode())
 	{
-		// Clear the garbage around the edges of the console
-		VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
-	}
-	else
-	{
-		// Set Video_Move based on system settings
-		switch (VIDEO_GetCurrentTvMode())
-		{
-			case VI_NTSC:
-				*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
-				break;
+		case VI_NTSC:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
+			break;
 
-			case VI_PAL:
-				*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
-				break;
+		case VI_PAL:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
+			break;
 
-			case VI_MPAL:
-				*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::MPAL;
-				break;
+		case VI_MPAL:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::MPAL;
+			break;
 
-			case VI_EURGB60:
-				*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
-				break;
-		}
+		case VI_EURGB60:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
+			break;
 	}
 }
 

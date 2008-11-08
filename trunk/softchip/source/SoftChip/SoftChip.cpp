@@ -105,7 +105,7 @@ SoftChip::~SoftChip(){}
 void SoftChip::Set_VideoMode(char Region)
 {
 	// TODO: Some exception handling is needed here
-
+	// TODO: Proper video mode patching is needed
 	switch (Region)
 	{
 		case Wii_Disc::Regions::PAL_Default:
@@ -114,19 +114,15 @@ void SoftChip::Set_VideoMode(char Region)
 		case Wii_Disc::Regions::Euro_X:
 		case Wii_Disc::Regions::Euro_Y:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
-			vmode = &TVPal528IntDf;
 			break;
 
 		case Wii_Disc::Regions::NTSC_USA:
 		case Wii_Disc::Regions::NTSC_Japan:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
-			vmode = &TVNtsc480IntDf;
-			break;
-
-		default:
-			vmode		= VIDEO_GetPreferredMode(0);
 			break;
 	}
+
+	vmode		= VIDEO_GetPreferredMode(0);
 
 	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 

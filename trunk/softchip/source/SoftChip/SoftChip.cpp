@@ -107,14 +107,22 @@ void SoftChip::Set_VideoMode()
 
 	vmode = VIDEO_GetPreferredMode(0);
 
-	switch (vmode->viTVMode >> 2)
+	switch (CONF_GetVideo())
 	{
-		case VI_NTSC:
+		case CONF_VIDEO_NTSC:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
 			break;
 
-		default:
+		case CONF_VIDEO_PAL:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
+			break;
+
+		case CONF_VIDEO_MPAL:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::MPAL;
+			break;
+
+		default:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
 			break;
 	}
 

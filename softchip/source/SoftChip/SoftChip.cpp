@@ -76,6 +76,14 @@ SoftChip::SoftChip()
 	// Initialize the console - CON_InitEx was the problem with stev418
 	CON_Init(framebuffer, x, y, w, h, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
 
+	VIDEO_Configure(vmode);
+	VIDEO_SetNextFramebuffer(framebuffer);
+	VIDEO_SetBlack(false);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+
+	if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
+
 	// Clear the garbage around the edges of the console
 	VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
 

@@ -109,26 +109,12 @@ void SoftChip::Set_VideoMode()
 
 	switch (vmode->viTVMode >> 2)
 	{
-		case VI_PAL:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
-			vmode = &TVPal528IntDf;
-			break;
-
 		case VI_NTSC:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
-			if (VIDEO_HaveComponentCable())
-				vmode = &TVNtsc480Prog;
-			else
-				vmode = &TVNtsc480IntDf;
-			break;
-
-		case VI_MPAL:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
-			vmode = &TVMpal480IntDf;
 			break;
 
 		default:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
 			break;
 	}
 

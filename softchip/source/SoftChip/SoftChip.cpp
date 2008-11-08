@@ -60,6 +60,11 @@ SoftChip::SoftChip()
 
 	// Load proper cIOS version
 	IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
+	if (!IOS_Loaded)
+	{
+		IOS_Version = 36;
+		IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
+	}
 
 	// Initialize Video
 	vmode = VIDEO_GetPreferredMode(0);
@@ -96,16 +101,8 @@ SoftChip::SoftChip()
 	SYS_SetPowerCallback(Standby);
 	SYS_SetResetCallback(Reboot);
 
-	// TODO: Replace this with graphical banner (PNGU)
-	// printf("\x1b[1;0H"); // Jump a line
-	printf("\n\nWii SoftChip v0.0.1-pre\n");
-	printf("This software is distributed under the terms\n");
-	printf("of the GNU General Public License (GPLv3)\n");
-	printf("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");
+	Initialize();
 
-	// TODO: Make the IOS version configurable
-	if (IOS_Loaded) printf("[+] IOS %d Loaded\n", IOS_Version);
-	DI->Initialize();
 }
 
 /*******************************************************************************
@@ -117,6 +114,48 @@ SoftChip::SoftChip()
  ******************************************************************************/
 
 SoftChip::~SoftChip(){}
+
+/*******************************************************************************
+ * Initialize: Sets up subsystems
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void SoftChip::Initialize()
+{
+
+	// TODO: Replace this with graphical banner (PNGU)
+	// printf("\x1b[1;0H"); // Jump a line
+	printf("\n\nWii SoftChip v0.0.1-pre\n");
+	printf("This software is distributed under the terms\n");
+	printf("of the GNU General Public License (GPLv3)\n");
+	printf("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");
+
+	// TODO: Make the IOS version configurable
+	if (IOS_Loaded)
+	{
+		printf("[+] IOS %d Loaded\n", IOS_Version);
+		if (IOS_Version != 249)
+		{
+			printf("Error: SoftChip requires a Custom IOS with dip-module\n");
+			printf("installed as IOS 249. Exiting...");
+			sleep(5);
+			exit(0);
+		}
+
+	}
+
+	if (!DI->Initialize())
+	{
+		printf("Error: Failed to initialize dip-module.  Exiting...");
+		sleep (5);
+		exit(0);
+	}
+}
+
+
 
 /*******************************************************************************
  * Set_VideoMode: Forces the video mode based on current system settings

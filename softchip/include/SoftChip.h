@@ -32,6 +32,7 @@ protected:
 	void*		framebuffer;
 
 public:
+	void Initialize();					// Initializer method
 	void Run();							// Main function
 
 private:

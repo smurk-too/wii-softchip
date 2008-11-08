@@ -116,7 +116,6 @@ void SoftChip::Set_VideoMode()
 
 		case VI_NTSC:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
-
 			if (VIDEO_HaveComponentCable())
 				vmode = &TVNtsc480Prog;
 			else
@@ -126,6 +125,10 @@ void SoftChip::Set_VideoMode()
 		case VI_MPAL:
 			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
 			vmode = &TVMpal480IntDf;
+			break;
+
+		case VI_EURGB60:
+			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
 			break;
 	}
 

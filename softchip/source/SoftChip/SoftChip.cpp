@@ -97,7 +97,7 @@ SoftChip::SoftChip()
 	SYS_SetResetCallback(Reboot);
 
 	// TODO: Replace this with graphical banner (PNGU)
-	printf("\x1b[1;0H"); // Jump a line
+	// printf("\x1b[1;0H"); // Jump a line
 	printf("Wii SoftChip v0.0.1-pre\n");
 	printf("This software is distributed under the terms\n");
 	printf("of the GNU General Public License (GPLv3)\n");
@@ -409,6 +409,9 @@ void SoftChip::Load_Disc()
 		*(dword*)Memory::Arena_L	= 0x00000000;
 		*(dword*)Memory::Bus_Speed	= 0x0E7BE2C0;
 		*(dword*)Memory::CPU_Speed	= 0x2B73A840;
+
+		// Enable online mode in games
+		memcpy((dword*)Memory::Online_Check, *(dword*)Memory::Disc_ID, 4);
 
 		// Retrieve application entry point
 		void* Entry = Exit();

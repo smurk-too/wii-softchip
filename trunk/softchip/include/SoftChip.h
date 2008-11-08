@@ -39,7 +39,7 @@ private:
 	static void Reboot();				// Return to system menu
 
 	void 	Load_Disc();					// Loads the disc
-	void	Set_VideoMode(char Region);
+	void	Set_VideoMode(bool LoadingGame);
 
 protected:
 	SoftChip();

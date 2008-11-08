@@ -61,7 +61,7 @@ SoftChip::SoftChip()
 	IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
 
 	// Initialize Video
-	Set_VideoMode(0);
+	Set_VideoMode(false);
 
 	// Initialize Input
 	PAD_Init();
@@ -73,7 +73,7 @@ SoftChip::SoftChip()
 	SYS_SetResetCallback(Reboot);
 
 	// TODO: Replace this with graphical banner (PNGU)
-
+	printf("\x1b[1;0H"); // Jump a line
 	printf("Wii SoftChip v0.0.1-pre\n");
 	printf("This software is distributed under the terms\n");
 	printf("of the GNU General Public License (GPLv3)\n");
@@ -102,39 +102,32 @@ SoftChip::~SoftChip(){}
  *
  ******************************************************************************/
 
-void SoftChip::Set_VideoMode(char Region)
+void SoftChip::Set_VideoMode(bool LoadingGame)
 {
 	// TODO: Some exception handling is needed here
-	// TODO: Proper video mode patching is needed
-	switch (Region)
+	// The VideoMode is set in two phases, when starting SoftChip (LoadingGame == false)
+	// and when booting the game (LoadingGame == true)
+
+	if (!LoadingGame)
 	{
-		case Wii_Disc::Regions::PAL_Default:
-		case Wii_Disc::Regions::PAL_France:
-		case Wii_Disc::Regions::PAL_Germany:
-		case Wii_Disc::Regions::Euro_X:
-		case Wii_Disc::Regions::Euro_Y:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
-			break;
+		vmode = VIDEO_GetPreferredMode(0);
+		framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 
-		case Wii_Disc::Regions::NTSC_USA:
-		case Wii_Disc::Regions::NTSC_Japan:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
-			break;
+		// Set console parameters
+		int x, y, w, h;
+		x = 40;
+		y = 40;
+
+		w = vmode->fbWidth - (x * 2);
+		h = vmode->xfbHeight - (y + 20);
+
+		// Initialize the console - CON_InitEx was the problem with stev418
+		CON_Init(framebuffer, x, y, w, h, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
 	}
-
-	vmode		= VIDEO_GetPreferredMode(0);
-
-	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
-
-	// Set console parameters
-	int x, y, w, h;
-	x = 40;
-	y = 40;
-
-	w = vmode->fbWidth		- (x * 2);		// Center the console
-	h = vmode->xfbHeight	- (y + 20);		// Offset the bottom
-
-	CON_InitEx(vmode, x, y, w, h);			// Initialize the console
+	else if (CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable()) // 480p
+	{
+		vmode = &TVNtsc480Prog;
+	}
 
 	VIDEO_Configure(vmode);
 	VIDEO_SetNextFramebuffer(framebuffer);
@@ -144,8 +137,33 @@ void SoftChip::Set_VideoMode(char Region)
 
 	if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
 
-	// Clear the garbage around the edges of the console
-	VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
+	if (!LoadingGame)
+	{
+		// Clear the garbage around the edges of the console
+		VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
+	}
+	else
+	{
+		// Set Video_Move based on system settings
+		switch (VIDEO_GetCurrentTvMode())
+		{
+			case VI_NTSC:
+				*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
+				break;
+
+			case VI_PAL:
+				*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
+				break;
+
+			case VI_MPAL:
+				*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::MPAL;
+				break;
+
+			case VI_EURGB60:
+				*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
+				break;
+		}
+	}
 }
 
 /*******************************************************************************
@@ -398,7 +416,7 @@ void SoftChip::Load_Disc()
 		printf("Launching Application!\n\n");
 
 		// Set video mode for discs native region
-		Set_VideoMode(*(char*)Memory::Disc_Region);
+		Set_VideoMode(true);
 
 		// Flush application memory range
 		DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values

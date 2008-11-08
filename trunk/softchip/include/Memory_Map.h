@@ -47,7 +47,7 @@ namespace Memory
 		Bus_Speed		= 0x800000f8,
 		CPU_Speed		= 0x800000fc,
 		Dol_Params		= 0x800030f0,
-		Offline_Check	= 0x80003180,
+		Online_Check	= 0x80003180,
 		Apploader		= 0x81200000
 	};
 }

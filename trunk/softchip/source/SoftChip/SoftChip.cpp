@@ -408,7 +408,7 @@ void SoftChip::Load_Disc()
 		printf("Launching Application!\n\n");
 
 		// Set video mode for discs native region
-		Set_VideoMode(true);
+		Set_VideoMode();
 
 		// Flush application memory range
 		DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values

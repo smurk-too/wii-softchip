@@ -52,8 +52,8 @@ SoftChip::SoftChip()
 	framebuffer					= 0;
 	vmode						= 0;
 
-	int			IOS_Version		= 249;
-	bool		IOS_Loaded		= false;
+	IOS_Loaded = false;
+	IOS_Version = 249;
 
 	// Initialize subsystems
 	VIDEO_Init();

@@ -30,6 +30,8 @@ protected:
 	bool		Reset_Flag;					// Flag is set when reset button is pressed
 	GXRModeObj* vmode;
 	void*		framebuffer;
+	int			IOS_Version;
+	bool		IOS_Loaded;
 
 public:
 	void Initialize();					// Initializer method

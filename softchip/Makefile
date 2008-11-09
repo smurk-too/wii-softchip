@@ -34,7 +34,7 @@ LDFLAGS	=	-g $(MACHDEP) -mrvl -Wl,-Map,$(notdir $@).map -T../rvl.ld
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lwiiuse -lbte -lfat -logc -lm
+LIBS	:=	 -lfat -lwiiuse -lbte -lmad -lm -lmodplay -logc
 
 
 #---------------------------------------------------------------------------------

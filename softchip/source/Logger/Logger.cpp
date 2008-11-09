@@ -23,6 +23,8 @@
 
 #include "Logger.h"
 
+#define DEBUG
+
 //--------------------------------------
 // Logger Class
 
@@ -34,10 +36,7 @@
  *
  ******************************************************************************/
 
-Logger::Logger()
-{
-	// TODO: Is there a way to create a directory with libfat?
-}
+Logger::Logger() {}
 
 /*******************************************************************************
  * ~Logger: Default destructor
@@ -50,30 +49,38 @@ Logger::Logger()
 Logger::~Logger(){}
 
 /*******************************************************************************
- * Logger: Init Fat System
+ * Initialize: Init Fat System
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns void
  *
  ******************************************************************************/
 
-void Logger::InitFat()
+void Logger::Initialize()
 {
-	FILE *fp	= 0;
+    // Mount the file system
+    if (!fatInitDefault())
+    {
+#ifdef DEBUG
+        printf("\nFailed to initialize the file system\n");
+#endif
+        return;
+    }
+}
 
-	// TODO: Use a log file using hour/date in name, better debug experience
-	if (fatInitDefault())
-	{
-		fp = fopen("/softchip.log", "ab"); // TODO: Remove this
-		if (fp != NULL)
-		{
-			// TODO: Put time info, or the other TODO above
-			fprintf(fp, "Starting SoftChip...\n");
-			fclose(fp);
-		}
-	}
-	// TODO: Set something when not initialized, but don't exit
-	// just disable the logger system, for people who use wiiload
+/*******************************************************************************
+ * Initialize: Init Fat System
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Logger::Release()
+{
+    if (!fatUnmount(PI_INTERNAL_SD)) {
+        fatUnsafeUnmount(PI_INTERNAL_SD);
+    }
 }
 
 /*******************************************************************************
@@ -86,31 +93,29 @@ void Logger::InitFat()
 
 void Logger::Write(const char* Filename, const char* Message, ...)
 {
-	// TODO: Use the same file for logging?
-
-	va_list argp;
-	FILE *fp;
+    va_list argp;
+    FILE *fp;
 
     // Open existing file
-	fp = fopen(Filename, "ab");
-	if (fp == NULL)
-	{
-		fp = fopen(Filename, "wb");
-		if (fp == NULL)
-		{
-			// If you are here, it's mostly because libfat init got whacked by ios_reload
-			return;
-		}
-	}
+    fp = fopen(Filename, "ab");
+    if (fp == NULL)
+    {
+        fp = fopen(Filename, "wb");
+        if (fp == NULL)
+        {
+            // If you are here, it's mostly because libfat init got whacked by ios_reload
+#ifdef DEBUG
+            printf("\nCouldn't open file %s\n", Filename);
+#endif
+            return;
+        }
+    }
 
     // Write the formatted message
     va_start(argp, Message);
-	vfprintf(fp, Message, argp);
+    vfprintf(fp, Message, argp);
     va_end(argp);
 
-	// Cleanup
-	if (fp != NULL)
-	{
-		fclose(fp);
-	}
+    // Cleanup
+    fclose(fp);
 }

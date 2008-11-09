@@ -54,19 +54,13 @@ SoftChip::SoftChip()
 	vmode						= 0;
 
 	IOS_Loaded = false;
-	IOS_Version = 249;
+	IOS_Version = Target_IOS;
 
 	// Initialize subsystems
 	VIDEO_Init();
 
-	// Initialize SD fat file system
-	if(!fatInitDefault())
-	{
-		printf("Error: Please insert a sd card!\n");
-		exit(0);
-	}
-	// TODO: REMOVE ME
-	Logger::Instance()->Write("/config/test.log", "\nTesting...\n");
+	// Initialize Fat System
+	Logger::InitFat();
 
 	/*
 
@@ -118,7 +112,6 @@ SoftChip::SoftChip()
 	SYS_SetResetCallback(Reboot);
 
 	Initialize();
-
 }
 
 /*******************************************************************************
@@ -148,7 +141,6 @@ void SoftChip::Initialize()
 	printf("of the GNU General Public License (GPLv3)\n");
 	printf("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");
 
-
 	// TODO: Make the IOS version configurable
 	if (IOS_Loaded)
 	{
@@ -160,18 +152,23 @@ void SoftChip::Initialize()
 			sleep(5);
 			exit(0);
 		}
-
+	}
+	else
+	{
+		printf("Error loading IOS.\n");
+		printf("SoftChip requires a Custom IOS with dip-module\n");
+		printf("installed as IOS 249. Exiting...");
+		sleep(5);
+		exit(0);
 	}
 
 	if (!DI->Initialize())
 	{
-		printf("Error: Failed to initialize dip-module.  Exiting...");
+		printf("Error: Failed to initialize dip-module. Exiting...");
 		sleep (5);
 		exit(0);
 	}
 }
-
-
 
 /*******************************************************************************
  * Set_VideoMode: Forces the video mode based on current system settings
@@ -184,13 +181,33 @@ void SoftChip::Initialize()
 void SoftChip::Set_VideoMode()
 {
 	// TODO: Some exception handling is needed here
-	// The VideoMode is set in two phases, when starting SoftChip (LoadingGame == false)
-	// and when booting the game (LoadingGame == true)
+	// Don't replace this var yet, I still have tests to do.
+	unsigned int Video_Mode;
 
-	if (CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable()) // 480p
-	{
-		vmode = &TVNtsc480Prog;
+	switch (CONF_GetVideo()) {
+		case CONF_VIDEO_NTSC:
+			vmode = &TVNtsc480IntDf;
+			Video_Mode = (unsigned int)Video::Modes::NTSC;
+			break;
+
+		case CONF_VIDEO_PAL:
+			vmode = &TVPal528IntDf;
+			Video_Mode = (unsigned int)Video::Modes::PAL;
+			break;
+
+		case CONF_VIDEO_MPAL:
+			vmode = &TVMpal480IntDf;
+			Video_Mode = (unsigned int)Video::Modes::MPAL;
+			break;
+
+		default:
+			vmode = &TVNtsc480IntDf;
+			Video_Mode = (unsigned int)Video::Modes::NTSC;
 	}
+
+	// Set 0x800000cc based on system settings
+	// For some reason, setting this before VIDEO_ calls has better PAL compatibility.
+	*(unsigned int*)Memory::Video_Mode = Video_Mode;
 
 	VIDEO_Configure(vmode);
 	VIDEO_SetNextFramebuffer(framebuffer);
@@ -199,26 +216,6 @@ void SoftChip::Set_VideoMode()
 	VIDEO_WaitVSync();
 
 	if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
-
-	// Set Video_Move based on system settings
-	switch (VIDEO_GetCurrentTvMode())
-	{
-		case VI_NTSC:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::NTSC;
-			break;
-
-		case VI_PAL:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL;
-			break;
-
-		case VI_MPAL:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::MPAL;
-			break;
-
-		case VI_EURGB60:
-			*(unsigned int*)Memory::Video_Mode = (unsigned int)Video::Modes::PAL60;
-			break;
-	}
 }
 
 /*******************************************************************************
@@ -311,6 +308,7 @@ void SoftChip::Load_Disc()
 
 	try
 	{
+		printf("Loading Game...\n"); // For testing Detect problems
 		DI->Wait_CoverClose();
 		DI->Reset();
 

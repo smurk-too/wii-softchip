@@ -17,7 +17,7 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	SoftChip
 BUILD		:=	build
-SOURCES		:=	source source/SoftChip source/DIP source/cIOS
+SOURCES		:=	source source/SoftChip source/DIP source/cIOS source/Logger
 DATA		:=	data  
 INCLUDES	:=	include
 
@@ -34,7 +34,7 @@ LDFLAGS	=	-g $(MACHDEP) -mrvl -Wl,-Map,$(notdir $@).map -T../rvl.ld
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lwiiuse -lbte -lm -logc #-lfat -lwiiuse -lbte -lmad -lm -lmodplay -logc	 
+LIBS	:=	-lwiiuse -lbte -lfat -logc -lm
 
 
 #---------------------------------------------------------------------------------

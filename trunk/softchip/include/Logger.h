@@ -16,6 +16,7 @@
 
 //--------------------------------------
 // Includes
+#include <fat.h>
 
 //--------------------------------------
 // Logger Class
@@ -23,7 +24,7 @@
 class Logger
 {
 public:
-	void Write(const char* Message, ...);
+	void Write(const char* Filename, const char* Message, ...);
 
 protected:
 	Logger();

@@ -28,6 +28,7 @@
 #include "WiiDisc.h"
 #include "Apploader.h"
 #include "cIOS.h"
+#include "Logger.h"
 
 #include "SoftChip.h"
 
@@ -57,6 +58,21 @@ SoftChip::SoftChip()
 
 	// Initialize subsystems
 	VIDEO_Init();
+
+	// Initialize SD fat file system
+	if(!fatInitDefault())
+	{
+		printf("Error: Please insert a sd card!\n");
+		exit(0);
+	}
+	// TODO: REMOVE ME
+	Logger::Instance()->Write("/config/test.log", "\nTesting...\n");
+
+	/*
+
+	 For some reason, this has to be before the IOS reload. After the IOS reload, games appear to hang (fs unmount needed?). It needs investigation.
+
+	 */
 
 	// Load proper cIOS version
 	IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
@@ -125,13 +141,13 @@ SoftChip::~SoftChip(){}
 
 void SoftChip::Initialize()
 {
-
 	// TODO: Replace this with graphical banner (PNGU)
 	// printf("\x1b[1;0H"); // Jump a line
 	printf("\n\nWii SoftChip v0.0.1-pre\n");
 	printf("This software is distributed under the terms\n");
 	printf("of the GNU General Public License (GPLv3)\n");
 	printf("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");
+
 
 	// TODO: Make the IOS version configurable
 	if (IOS_Loaded)

@@ -50,6 +50,33 @@ Logger::Logger()
 Logger::~Logger(){}
 
 /*******************************************************************************
+ * Logger: Init Fat System
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Logger::InitFat()
+{
+	FILE *fp	= 0;
+
+	// TODO: Use a log file using hour/date in name, better debug experience
+	if (fatInitDefault())
+	{
+		fp = fopen("/softchip.log", "ab"); // TODO: Remove this
+		if (fp != NULL)
+		{
+			// TODO: Put time info, or the other TODO above
+			fprintf(fp, "Starting SoftChip...\n");
+			fclose(fp);
+		}
+	}
+	// TODO: Set something when not initialized, but don't exit
+	// just disable the logger system, for people who use wiiload
+}
+
+/*******************************************************************************
  * Write: Log a line to the specified file
  * -----------------------------------------------------------------------------
  * Return Values:
@@ -59,6 +86,8 @@ Logger::~Logger(){}
 
 void Logger::Write(const char* Filename, const char* Message, ...)
 {
+	// TODO: Use the same file for logging?
+
 	va_list argp;
 	FILE *fp;
 

@@ -19,6 +19,8 @@
 #include <ogcsys.h>
 #include "DIP.h"
 
+#define Target_IOS 249 // Just for now
+
 //--------------------------------------
 // SoftChip Class
 

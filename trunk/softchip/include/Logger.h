@@ -24,7 +24,8 @@
 class Logger
 {
 public:
-	static void InitFat();
+	void Initialize();
+	void Release();
 	void Write(const char* Filename, const char* Message, ...);
 
 protected:

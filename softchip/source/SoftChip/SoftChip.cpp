@@ -262,10 +262,12 @@ void SoftChip::Run()
         unsigned int Buttons	= WPAD_ButtonsDown(0);
         unsigned int GC_Buttons	= PAD_ButtonsDown(0);
 
-        if ((Buttons & WPAD_BUTTON_HOME) || (GC_Buttons & PAD_BUTTON_START))
+        if ((Buttons & WPAD_BUTTON_HOME) || (GC_Buttons & PAD_BUTTON_START) || (Buttons & WPAD_CLASSIC_BUTTON_HOME))
+		{
             exit(0);
+		}
 
-        if ((Buttons & WPAD_BUTTON_A) || (GC_Buttons & PAD_BUTTON_A))
+        if ((Buttons & WPAD_BUTTON_A) || (GC_Buttons & PAD_BUTTON_A) || (Buttons & WPAD_CLASSIC_BUTTON_A))
         {
             Load_Disc();
         }

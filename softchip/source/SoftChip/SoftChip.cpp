@@ -77,17 +77,6 @@ SoftChip::SoftChip()
     vmode = VIDEO_GetPreferredMode(0);
     framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 
-    // Set console parameters
-    int x, y, w, h;
-    x = 40;
-    y = 40;
-
-    w = vmode->fbWidth - (x * 2);
-    h = vmode->xfbHeight - (y + 20);
-
-    // Initialize the console - CON_InitEx was the problem with stev418
-    CON_Init(framebuffer, x, y, w, h, vmode->fbWidth * VI_DISPLAY_PIX_SZ);
-
     VIDEO_Configure(vmode);
     VIDEO_SetNextFramebuffer(framebuffer);
     VIDEO_SetBlack(false);
@@ -98,6 +87,17 @@ SoftChip::SoftChip()
 
     // Clear the garbage around the edges of the console
     VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
+
+	// Set console parameters
+    int x, y, w, h;
+    x = 20;
+    y = 20;
+
+    w = vmode->fbWidth - (x * 2);
+    h = vmode->xfbHeight - (y + 20);
+
+    // Initialize the console - CON_InitEx works after VIDEO_ calls
+	CON_InitEx(vmode, x, y, w, h);
 
     // Initialize Input
     PAD_Init();
@@ -132,8 +132,7 @@ SoftChip::~SoftChip(){}
 void SoftChip::Initialize()
 {
     // TODO: Replace this with graphical banner (PNGU)
-    // printf("\x1b[1;0H"); // Jump a line
-    printf("\n\nWii SoftChip v0.0.1-pre\n");
+    printf("Wii SoftChip v0.0.1-pre\n");
     printf("This software is distributed under the terms\n");
     printf("of the GNU General Public License (GPLv3)\n");
     printf("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");

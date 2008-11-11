@@ -165,6 +165,8 @@ void SoftChip::Initialize()
         sleep (5);
         exit(0);
     }
+
+    DI->Stop_Motor();
 }
 
 /*******************************************************************************
@@ -213,7 +215,6 @@ void SoftChip::Set_VideoMode()
     VIDEO_WaitVSync();
 
     if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
-    DI->Stop_Motor();
 }
 
 /*******************************************************************************

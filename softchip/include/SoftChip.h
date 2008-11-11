@@ -34,6 +34,8 @@ protected:
 	void*		framebuffer;
 	int			IOS_Version;
 	bool		IOS_Loaded;
+	int			Lang_Selected;				// Language Selected
+	bool		System_VMode;				// Use System Video Mode
 
 public:
 	void Initialize();					// Initializer method
@@ -43,8 +45,9 @@ private:
 	static void Standby();				// Put the console into standby
 	static void Reboot();				// Return to system menu
 
-	void 	Load_Disc();					// Loads the disc
-	void	Set_VideoMode();
+	void 	Load_Disc();								// Loads the disc
+	void	Set_VideoMode(char Region);					// Set Video Mode
+	bool	Set_GameLanguage(void *Address, int Size);	// Patch Game's Language
 
 protected:
 	SoftChip();

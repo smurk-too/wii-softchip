@@ -17,18 +17,17 @@
 // Includes
 
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <unistd.h>
 #include <ogc/lwp_watchdog.h>
-
-#include <wiiuse/wpad.h>
 
 #include "Memory_Map.h"
 #include "WiiDisc.h"
 #include "Apploader.h"
 #include "cIOS.h"
 #include "Logger.h"
+#include "Input.h"
 
 #include "SoftChip.h"
 
@@ -54,6 +53,8 @@ SoftChip::SoftChip()
     Reset_Flag					= false;
     framebuffer					= 0;
     vmode						= 0;
+	Lang_Selected				= -1;
+	System_VMode				= true;
 
     IOS_Loaded = false;
     IOS_Version = Target_IOS;
@@ -100,9 +101,7 @@ SoftChip::SoftChip()
 	CON_InitEx(vmode, x, y, w, h);
 
     // Initialize Input
-    PAD_Init();
-    WPAD_Init();
-    WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS_ACC_IR);
+	Input::Init();
 
     // Set callback functions
     SYS_SetPowerCallback(Standby);
@@ -176,32 +175,52 @@ void SoftChip::Initialize()
  *
  ******************************************************************************/
 
-void SoftChip::Set_VideoMode()
+void SoftChip::Set_VideoMode(char Region)
 {
     // TODO: Some exception handling is needed here
-    // Don't replace this var yet, I still have tests to do.
     unsigned int Video_Mode;
 
-    switch (CONF_GetVideo()) {
-        case CONF_VIDEO_NTSC:
-            vmode = &TVNtsc480IntDf;
-            Video_Mode = (unsigned int)Video::Modes::NTSC;
-            break;
+	if (System_VMode)
+	{
+		switch (CONF_GetVideo()) {
+			case CONF_VIDEO_NTSC:
+				vmode = &TVNtsc480IntDf;
+				Video_Mode = (unsigned int)Video::Modes::NTSC;
+				break;
 
-        case CONF_VIDEO_PAL:
-            vmode = &TVPal528IntDf;
-            Video_Mode = (unsigned int)Video::Modes::PAL;
-            break;
+			case CONF_VIDEO_PAL:
+				vmode = &TVPal528IntDf;
+				Video_Mode = (unsigned int)Video::Modes::PAL;
+				break;
 
-        case CONF_VIDEO_MPAL:
-            vmode = &TVMpal480IntDf;
-            Video_Mode = (unsigned int)Video::Modes::MPAL;
-            break;
+			case CONF_VIDEO_MPAL:
+				vmode = &TVMpal480IntDf;
+				Video_Mode = (unsigned int)Video::Modes::MPAL;
+				break;
 
-        default:
-            vmode = &TVNtsc480IntDf;
-            Video_Mode = (unsigned int)Video::Modes::NTSC;
-    }
+			default:
+				vmode = &TVNtsc480IntDf;
+				Video_Mode = (unsigned int)Video::Modes::NTSC;
+		}
+	}
+	else
+	{
+		switch (Region) {
+			case Wii_Disc::Regions::PAL_Default:
+			case Wii_Disc::Regions::PAL_France:
+			case Wii_Disc::Regions::PAL_Germany:
+			case Wii_Disc::Regions::Euro_X:
+			case Wii_Disc::Regions::Euro_Y:
+				Video_Mode = (unsigned int)Video::Modes::PAL;
+				break;
+
+			case Wii_Disc::Regions::NTSC_USA:
+			case Wii_Disc::Regions::NTSC_Japan:
+			default:
+				Video_Mode = (unsigned int)Video::Modes::NTSC;
+				break;
+		}
+	}
 
     // Set 0x800000cc based on system settings
     // For some reason, setting this before VIDEO_ calls has better PAL compatibility.
@@ -214,6 +233,42 @@ void SoftChip::Set_VideoMode()
     VIDEO_WaitVSync();
 
     if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
+}
+
+/*******************************************************************************
+ * Set_GameLanguage: Patches Game's Language
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns true if patched
+ *
+ ******************************************************************************/
+
+bool SoftChip::Set_GameLanguage(void *Address, int Size)
+{
+	unsigned int PatchData[3]	= { 0x7C600775, 0x40820010, 0x38000000 };
+	unsigned int *Addr			= (unsigned int*)Address;
+	bool SearchTarget			= false;
+
+	while (Size >= 16)
+	{
+		if (SearchTarget)
+		{
+			if (*Addr == 0x88610008)
+			{
+				*Addr = (unsigned int)(0x38600000 | Lang_Selected);
+				return true;
+			}
+		}
+		else if (Addr[0] == PatchData[0] && Addr[1] == PatchData[1] && Addr[2] == PatchData[2])
+		{
+			SearchTarget = true;
+		}
+
+		Addr += 1;
+		Size -= 4;
+	}
+
+	return false;
 }
 
 /*******************************************************************************
@@ -242,7 +297,6 @@ void SoftChip::Reboot()
     SoftChip::Instance()->Reset_Flag = true;
 }
 
-
 /*******************************************************************************
  * Run: SoftChip entry
  * -----------------------------------------------------------------------------
@@ -253,22 +307,28 @@ void SoftChip::Reboot()
 
 void SoftChip::Run()
 {
-    printf("Press the (A) button to continue.\n\n");
+	std::string Languages[]	= { "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
+	Input *In				= Input::Instance();
+	int Index				= 0;
+	int Cols				= 0;
+	int Rows				= 0;
+
+	CON_GetMetrics(&Cols, &Rows);
+	printf("Press the (A) button to continue.\n");
+	printf("Use the Arrows to change settings.\n\n");
+	printf("\x1b[s"); // Save Position
+
     while (true)
     {
-        // TODO: Wrap this into an input class
-        WPAD_ScanPads();
-        PAD_ScanPads();
+        // Input
+		In->Update();
 
-        unsigned int Buttons	= WPAD_ButtonsDown(0);
-        unsigned int GC_Buttons	= PAD_ButtonsDown(0);
-
-        if ((Buttons & WPAD_BUTTON_HOME) || (GC_Buttons & PAD_BUTTON_START) || (Buttons & WPAD_CLASSIC_BUTTON_HOME))
+        if (In->GetSimpleInput(HOME, START, HOME))
 		{
             exit(0);
 		}
 
-        if ((Buttons & WPAD_BUTTON_A) || (GC_Buttons & PAD_BUTTON_A) || (Buttons & WPAD_CLASSIC_BUTTON_A))
+        if (In->GetSimpleInput(A, A, A))
         {
             Load_Disc();
         }
@@ -283,6 +343,34 @@ void SoftChip::Run()
         {
             STM_RebootSystem();
         }
+
+		if (In->GetSimpleInput(UP, UP, UP) || In->GetSimpleInput(DOWN, DOWN, DOWN))
+		{
+			Index = !Index;
+		}
+
+		else if (In->GetSimpleInput(RIGHT, RIGHT, RIGHT))
+		{
+			if (Index == 0 && ++Lang_Selected > 0x09) Lang_Selected = -1;
+			if (Index == 1) System_VMode = !System_VMode;
+		}
+
+		else if (In->GetSimpleInput(LEFT, LEFT, LEFT))
+		{
+			if (Index == 0 && --Lang_Selected < -1) Lang_Selected = 0x09;
+			if (Index == 1) System_VMode = !System_VMode;
+		}
+
+		// Print Settings
+		printf("\x1b[u"); // Return
+		for (Rows = 0; Rows < Cols * 2; Rows++) printf(" "); // Clear Lines
+
+		printf("\x1b[u\x1b[%um", (Index == 0) ? 32 : 37); // Return and Set Color
+		printf("Game's Language: %s\n", (Lang_Selected == -1) ? "System Default" : Languages[Lang_Selected].c_str());
+
+		printf("\x1b[%um", (Index == 1) ? 32 : 37); // Set Color
+		printf("Set Video Mode using: %s\n\n", (System_VMode) ? "System Settings" : "Disc Settings");
+		printf("\x1b[37m"); // Reset Color
 
         VIDEO_WaitVSync();
     }
@@ -308,7 +396,7 @@ void SoftChip::Load_Disc()
 
     try
     {
-        printf("Loading Game...\n"); // For testing Detect problems
+        printf("Loading Game...\n");
 
         DI->Wait_CoverClose();
         DI->Reset();
@@ -442,6 +530,7 @@ void SoftChip::Load_Disc()
         void*	Address = 0;
         int		Section_Size;
         int		Partition_Offset;
+		bool	Lang_Patched = (Lang_Selected == -1);
 
         printf("Loading.\t\t\n");
         while(Load(&Address, &Section_Size, &Partition_Offset))
@@ -453,6 +542,7 @@ void SoftChip::Load_Disc()
             DI->Read(Address, Section_Size, Partition_Offset << 2);
             DCFlushRange(Address, Section_Size);
             // NOTE: This would be the ideal time to patch main.dol
+			if (!Lang_Patched) Lang_Patched = Set_GameLanguage(Address, Section_Size);
 
         }
 
@@ -473,7 +563,7 @@ void SoftChip::Load_Disc()
         printf("Launching Application!\n\n");
 
         // Set video mode for discs native region
-        Set_VideoMode();
+        Set_VideoMode(*(char*)Memory::Disc_Region);
 
         // Flush application memory range
         DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values

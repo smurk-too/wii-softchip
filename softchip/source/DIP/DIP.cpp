@@ -359,3 +359,27 @@ int DIP::Open_Partition(unsigned int Offset, void* Ticket, void* Certificate, un
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
+
+/*******************************************************************************
+ * Stop_Motor: Stops the drives motor.  Will require a reset to resume operation
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns result of Ioctl command
+ *
+ ******************************************************************************/
+
+int DIP::Stop_Motor()
+{
+	Lock();
+	Command[0] = Ioctl::DI_StopMotor << 24;
+	Command[1] = 0;		// Set this to 1 to eject the disc
+	Command[2] = 0;		// This will temporarily kill the drive if set!!!
+
+	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_StopMotor, Command, 0x20, Output, 0x20);
+
+	if (Ret == 2) throw "Ioctl error";
+
+	Unlock();
+
+	return ((Ret == 1) ? 0 : -Ret);
+}

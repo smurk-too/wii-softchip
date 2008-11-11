@@ -213,6 +213,7 @@ void SoftChip::Set_VideoMode()
     VIDEO_WaitVSync();
 
     if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
+    DI->Stop_Motor();
 }
 
 /*******************************************************************************
@@ -308,6 +309,7 @@ void SoftChip::Load_Disc()
     try
     {
         printf("Loading Game...\n"); // For testing Detect problems
+
         DI->Wait_CoverClose();
         DI->Reset();
 

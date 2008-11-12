@@ -140,10 +140,10 @@ void SoftChip::Initialize()
     if (IOS_Loaded)
     {
         printf("[+] IOS %d Loaded\n", IOS_Version);
-        if (IOS_Version != 249)
+        if (IOS_Version != Target_IOS)
         {
             printf("Error: SoftChip requires a Custom IOS with dip-module\n");
-            printf("installed as IOS 249. Exiting...");
+            printf("installed as IOS %d. Exiting...", Target_IOS);
             sleep(5);
             exit(0);
         }
@@ -152,7 +152,7 @@ void SoftChip::Initialize()
     {
         printf("Error loading IOS.\n");
         printf("SoftChip requires a Custom IOS with dip-module\n");
-        printf("installed as IOS 249. Exiting...");
+        printf("installed as IOS %d. Exiting...", Target_IOS);
         sleep(5);
         exit(0);
     }

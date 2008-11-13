@@ -86,9 +86,6 @@ SoftChip::SoftChip()
 
     if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
 
-    // Clear the garbage around the edges of the console
-    VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
-
 	// Set console parameters
     int x, y, w, h;
     x = 20;
@@ -99,6 +96,9 @@ SoftChip::SoftChip()
 
     // Initialize the console - CON_InitEx works after VIDEO_ calls
 	CON_InitEx(vmode, x, y, w, h);
+
+	// Clear the garbage around the edges of the console
+    VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
 
     // Initialize Input
 	Input::Init();

@@ -184,22 +184,18 @@ void SoftChip::Set_VideoMode(char Region)
 	{
 		switch (CONF_GetVideo()) {
 			case CONF_VIDEO_NTSC:
-				vmode = &TVNtsc480IntDf;
 				Video_Mode = (unsigned int)Video::Modes::NTSC;
 				break;
 
 			case CONF_VIDEO_PAL:
-				vmode = &TVPal528IntDf;
 				Video_Mode = (unsigned int)Video::Modes::PAL;
 				break;
 
 			case CONF_VIDEO_MPAL:
-				vmode = &TVMpal480IntDf;
 				Video_Mode = (unsigned int)Video::Modes::MPAL;
 				break;
 
 			default:
-				vmode = &TVNtsc480IntDf;
 				Video_Mode = (unsigned int)Video::Modes::NTSC;
 		}
 	}

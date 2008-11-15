@@ -401,10 +401,10 @@ void SoftChip::Load_Disc()
         DI->Read_DiscID(reinterpret_cast<qword*>(Memory::Disc_ID));
 
         // Read header & process info
-        DI->Read_Unencrypted(&Header, 0x800, 0);
+        DI->Read_Unencrypted(&Header, sizeof(Wii_Disc::Header), 0);
 
         char Disc_ID[8];
-        memset(Disc_ID, 0, 8);
+        memset(Disc_ID, 0, sizeof(Disc_ID));
         memcpy(Disc_ID, &Header.ID, sizeof(Header.ID));
         printf("Disc ID: %s\n",Disc_ID);
         printf("Magic Number: 0x%x\n", Header.Magic);

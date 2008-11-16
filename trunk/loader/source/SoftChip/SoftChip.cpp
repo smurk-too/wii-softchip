@@ -418,14 +418,20 @@ void SoftChip::Load_Disc()
         printf("Partition Info is at: 0x%x\n", Offset);
 
         // TODO: Support for additional partition types (secondary, tertiary, quaternary)
-
         for (unsigned long i = 0; i < Descriptor.Primary_Count; i++)
         {
-            Offset += (i * sizeof(Wii_Disc::Partition_Info));
-            DI->Read_Unencrypted(&Partition_Info, sizeof(Wii_Disc::Partition_Info) << 2, Offset);
+        	// TODO: Fix hardcoded values
+        	static byte Buffer[0x20] __attribute__((aligned(0x20)));
+        	memset(Buffer, 0, 0x20);
 
-            if (Partition_Info.Type == 0)
+            DI->Read_Unencrypted(Buffer, 0x20, Offset);
+
+            memcpy(&Partition_Info, Buffer, sizeof(Wii_Disc::Partition_Info));
+
+            if (Partition_Info.Type != 1)
                 break;
+
+            Offset += sizeof(Wii_Disc::Partition_Info);
         }
 
         Offset = Partition_Info.Offset << 2;

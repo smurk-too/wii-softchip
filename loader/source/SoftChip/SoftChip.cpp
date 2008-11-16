@@ -422,7 +422,7 @@ void SoftChip::Load_Disc()
         for (unsigned long i = 0; i < Descriptor.Primary_Count; i++)
         {
             Offset += (i * sizeof(Wii_Disc::Partition_Info));
-            DI->Read_Unencrypted(&Partition_Info, sizeof(Wii_Disc::Partition_Info),Offset);
+            DI->Read_Unencrypted(&Partition_Info, sizeof(Wii_Disc::Partition_Info) << 2, Offset);
 
             if (Partition_Info.Type == 0)
                 break;

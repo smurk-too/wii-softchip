@@ -23,8 +23,6 @@
 
 #include "Logger.h"
 
-#define DEBUG
-
 //--------------------------------------
 // Logger Class
 
@@ -61,15 +59,12 @@ void Logger::Initialize()
     // Mount the file system
     if (!fatInitDefault())
     {
-#ifdef DEBUG
-        printf("\nFailed to initialize the file system\n");
-#endif
         return;
     }
 }
 
 /*******************************************************************************
- * Initialize: Init Fat System
+ * Release: Unmount SD
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns void
@@ -104,9 +99,7 @@ void Logger::Write(const char* Filename, const char* Message, ...)
         if (fp == NULL)
         {
             // If you are here, it's mostly because libfat init got whacked by ios_reload
-#ifdef DEBUG
-            printf("\nCouldn't open file %s\n", Filename);
-#endif
+			// or there's no SD card inserted
             return;
         }
     }

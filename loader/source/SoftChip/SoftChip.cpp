@@ -31,7 +31,8 @@
 
 #include "SoftChip.h"
 
-extern "C" int sdio_Deinitialize(void);
+extern "C" bool sdio_Startup(void);
+extern "C" bool sdio_Deinitialize(void);
 
 // static void Silent_Report(const char* Args, ...){}		// Blank apploader reporting function
 
@@ -576,6 +577,7 @@ void SoftChip::Load_Disc()
         DI->Close();
 
 		// Shutdown sdio
+		sdio_Startup();
 		sdio_Deinitialize();
 
         // Shutdown libogc services

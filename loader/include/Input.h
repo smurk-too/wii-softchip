@@ -1,15 +1,13 @@
 /*******************************************************************************
  * Input.h
  *
- * Copyright (c) 2008 Requiem (requiem@century-os.com)
- * Copyright (c) 2008 luccax
+ * Copyright (c) 2008 SoftChip Team
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
  *
  * Description:
  * -----------
- *	Contains definition of a class to handle input
  *
  ******************************************************************************/
 
@@ -18,27 +16,37 @@
 //--------------------------------------
 // Includes
 
-#include <ogc/pad.h>
-#include <wiiuse/wpad.h>
+#include <gccore.h>
 
 //--------------------------------------
 // Input Class
 
+struct Control
+{
+	bool	Active;
+	int		WPAD_Binding;
+	int		GC_Binding;
+};
+
 class Input
 {
 public:
-	static void Init();
-	void Update();
-	bool GetInput(unsigned int Wiimote, unsigned int GC, unsigned int Classic);
+	Control Up;
+	Control Down;
+	Control Left;
+	Control Right;
+	Control	Accept;
+	Control Cancel;
+	Control Exit;
 
-	#define GetSimpleInput(Wiimote, GC, Classic) \
-		GetInput(WPAD_BUTTON_##Wiimote, PAD_BUTTON_##GC, WPAD_CLASSIC_BUTTON_##Classic)
-
-private:
-	unsigned int Buttons;
-	unsigned int GC_Buttons;
+public:
+	void Initialize(void);
+	void Terminate();
+	void Scan();
 
 protected:
+	void Activate(Control* Command, bool Active);
+
 	Input();
 	Input(const Input&);
 	Input& operator= (const Input&);
@@ -52,4 +60,3 @@ public:
 		return &instance;
 	}
 };
-

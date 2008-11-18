@@ -27,7 +27,7 @@
 #include "Apploader.h"
 #include "cIOS.h"
 #include "Logger.h"
-#include "Input.h"
+
 
 #include "SoftChip.h"
 
@@ -50,6 +50,7 @@ extern "C" bool sdio_Deinitialize(void);
 SoftChip::SoftChip()
 {
     DI							= DIP::Instance();
+    Controls					= Input::Instance();
     Standby_Flag				= false;
     Reset_Flag					= false;
     framebuffer					= 0;
@@ -102,7 +103,7 @@ SoftChip::SoftChip()
     VIDEO_ClearFrameBuffer(vmode, framebuffer, COLOR_BLACK);
 
     // Initialize Input
-	Input::Init();
+	Controls->Initialize();
 
     // Set callback functions
     SYS_SetPowerCallback(Standby);
@@ -305,7 +306,7 @@ void SoftChip::Reboot()
 void SoftChip::Run()
 {
 	std::string Languages[]	= { "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
-	Input *In				= Input::Instance();
+
 	int Index				= 0;
 	int Cols				= 0;
 	int Rows				= 0;
@@ -318,21 +319,38 @@ void SoftChip::Run()
     while (true)
     {
         // Input
-		In->Update();
+		Controls->Scan();
 
-        if (In->GetSimpleInput(HOME, START, HOME))
+        if (Controls->Exit.Active)
 		{
             exit(0);
 		}
 
-        if (In->GetSimpleInput(A, A, A))
+        if (Controls->Accept.Active)
         {
             Load_Disc();
         }
 
+        if (Controls->Up.Active || Controls->Down.Active)
+        {
+        	Index = !Index;
+        }
+
+        else if (Controls->Right.Active)
+        {
+        	if (Index == 0 && ++Lang_Selected > 0x09) Lang_Selected = -1;
+        	if (Index == 1) System_VMode = !System_VMode;
+        }
+
+        else if (Controls->Left.Active)
+        {
+        	if (Index == 0 && --Lang_Selected < -1) Lang_Selected = 0x09;
+        	if (Index == 1) System_VMode = !System_VMode;
+        }
+
         if (Standby_Flag)
         {
-            WPAD_Shutdown();
+            Controls->Terminate();
             STM_ShutdownToStandby();
         }
 
@@ -341,22 +359,7 @@ void SoftChip::Run()
             STM_RebootSystem();
         }
 
-		if (In->GetSimpleInput(UP, UP, UP) || In->GetSimpleInput(DOWN, DOWN, DOWN))
-		{
-			Index = !Index;
-		}
 
-		else if (In->GetSimpleInput(RIGHT, RIGHT, RIGHT))
-		{
-			if (Index == 0 && ++Lang_Selected > 0x09) Lang_Selected = -1;
-			if (Index == 1) System_VMode = !System_VMode;
-		}
-
-		else if (In->GetSimpleInput(LEFT, LEFT, LEFT))
-		{
-			if (Index == 0 && --Lang_Selected < -1) Lang_Selected = 0x09;
-			if (Index == 1) System_VMode = !System_VMode;
-		}
 
 		// Print Settings
 		printf("\x1b[u"); // Return

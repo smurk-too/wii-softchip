@@ -18,6 +18,7 @@
 
 #include <ogcsys.h>
 #include "DIP.h"
+#include "Input.h"
 
 #define Target_IOS 249 // Just for now
 
@@ -28,6 +29,8 @@ class SoftChip
 {
 protected:
 	DIP*		DI;							// DIP interface
+	Input*		Controls;
+
 	bool		Standby_Flag;				// Flag is set when power button is pressed
 	bool		Reset_Flag;					// Flag is set when reset button is pressed
 	GXRModeObj* vmode;

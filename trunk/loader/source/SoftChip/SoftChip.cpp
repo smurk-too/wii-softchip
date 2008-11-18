@@ -33,6 +33,7 @@
 
 extern "C" bool sdio_Startup(void);
 extern "C" bool sdio_Deinitialize(void);
+extern "C" void settime(u64 time);
 
 // static void Silent_Report(const char* Args, ...){}		// Blank apploader reporting function
 
@@ -315,6 +316,8 @@ void SoftChip::Run()
 	printf("Press the (A) button to continue.\n");
 	printf("Use the Arrows to change settings.\n\n");
 	printf("\x1b[s"); // Save Position
+
+	settime(secs_to_ticks(time(NULL) - 946684800));
 
     while (true)
     {

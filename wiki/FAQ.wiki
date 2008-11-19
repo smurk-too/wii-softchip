@@ -1,3 +1,7 @@
+Q: Which firmware do i need for the loader, which firmware versions are compatible with the loader?
+<br>
+A: The loader does not require a certain firmware version, it should be compatible with *all* firmware versions. A game launched with the SoftChip loader will use the custom IOS as firmware, the original nintendo IOS are ignored. Yes that means, if you want to play a game which requires a firmware update you don't like, you don't have to install the update. [Don't even think about deleting the official IOS to "clean" up your Wii! That's really a bad idea.]
+<p>
 Q: Where can i download a compiled .dol or a channel of the SoftChip loader?
 <br>
 A: There isn't an official release of the loader at the moment. As soon as it leaves its pre-alpha status we will upload an official .dol file. Until then you can download and compile the latest revision for yourself or you can, for example look at GBAtemp for compiled binarys. *Note: The SoftChip team will take no responibilty for unofficial compiled files.*

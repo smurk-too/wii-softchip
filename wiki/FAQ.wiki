@@ -1,0 +1,11 @@
+Q: Where can i download a compiled .dol or a channel of the SoftChip loader?
+<br>
+A: There isn't an official release of the loader at the moment. As soon as it leaves its pre-alpha status we will upload an official .dol file. Until then you can download and compile the latest revision for yourself or you can, for example look at GBAtemp for compiled binarys. *Note: The SoftChip team will take no responibilty for unofficial compiled files.*
+<p>
+Q: I can't get <insert game name here> to work, what's wrong?
+<br>
+A: The compatibility of the loader depends mainly on the installed and used custom IOS. Until SoftChip's IOS is finished, it's recommend to use Waninkoko's Custom IOS36 rev07 or WiiGator's cIOS rev7. If a game does not work with WiiGator's Gamma Backup Loader, it's most likely it won't work with SoftChip's loader. If you are sure your game works with WiiGator's loader, but does not work with SoftChips, then please let us know.
+<p>
+Q: When i start a game, the Wii freezes with a green screen.
+<br>
+A: This should be an issue with imported games. Try again with video mode set to Disc Settings. Maybe this will be done automatically in a later revision.

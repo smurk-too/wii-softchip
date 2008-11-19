@@ -216,6 +216,7 @@ void SoftChip::Set_VideoMode(char Region)
 			case Wii_Disc::Regions::NTSC_USA:
 			case Wii_Disc::Regions::NTSC_Japan:
 			default:
+				if (vmode != &TVNtsc480Prog) vmode = &TVNtsc480IntDf; // Force NTSC Display (576i fix)
 				Video_Mode = (unsigned int)Video::Modes::NTSC;
 				break;
 		}

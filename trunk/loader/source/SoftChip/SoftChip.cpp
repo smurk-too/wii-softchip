@@ -426,23 +426,34 @@ void SoftChip::Load_Disc()
         printf("Partition Info is at: 0x%x\n", Offset);
 
         // TODO: Support for additional partition types (secondary, tertiary, quaternary)
-        for (unsigned long i = 0; i < Descriptor.Primary_Count; i++)
+		// TODO: Fix hardcoded values, ugly handling of 4+ partitions
+		dword BufferLen = 0x20;
+		if (Descriptor.Primary_Count > 4) BufferLen += (Descriptor.Primary_Count - 4) * 8;
+		byte *PartBuffer = (byte*)memalign(0x20, BufferLen);
+
+		memset(PartBuffer, 0, BufferLen);
+		DI->Read_Unencrypted(PartBuffer, BufferLen, Offset);
+
+		Wii_Disc::Partition_Info *Partitions = (Wii_Disc::Partition_Info*)PartBuffer;
+
+        for (dword i = 0; i < Descriptor.Primary_Count; i++)
         {
-        	// TODO: Fix hardcoded values
-        	static byte Buffer[0x20] __attribute__((aligned(0x20)));
-        	memset(Buffer, 0, 0x20);
-
-            DI->Read_Unencrypted(Buffer, 0x20, Offset);
-
-            memcpy(&Partition_Info, Buffer, sizeof(Wii_Disc::Partition_Info));
-
-            if (Partition_Info.Type != 1)
-                break;
-
-            Offset += sizeof(Wii_Disc::Partition_Info);
+			if (Partitions[i].Type != 1)
+			{
+				memcpy(&Partition_Info, &Partitions[i], sizeof(Wii_Disc::Partition_Info));
+				break;
+			}
         }
 
-        Offset = Partition_Info.Offset << 2;
+		Offset = Partition_Info.Offset << 2;
+		free(PartBuffer);
+
+        if (!Offset)
+		{
+			printf("[-] No boot partition found.\n\n");
+            return;
+		}
+
         printf("Partition is located at: 0x%x\n", Offset);
 
         // Set Offset Base to start of partition

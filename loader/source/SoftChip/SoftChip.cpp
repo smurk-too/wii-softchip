@@ -438,7 +438,7 @@ void SoftChip::Load_Disc()
 
         for (dword i = 0; i < Descriptor.Primary_Count; i++)
         {
-			if (Partitions[i].Type != 1)
+			if (Partitions[i].Type == 0)
 			{
 				memcpy(&Partition_Info, &Partitions[i], sizeof(Wii_Disc::Partition_Info));
 				break;

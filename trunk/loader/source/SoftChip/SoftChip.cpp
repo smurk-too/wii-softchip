@@ -28,11 +28,8 @@
 #include "cIOS.h"
 #include "Logger.h"
 
-
 #include "SoftChip.h"
 
-extern "C" bool sdio_Startup(void);
-extern "C" bool sdio_Deinitialize(void);
 extern "C" void settime(u64 time);
 
 // static void Silent_Report(const char* Args, ...){}		// Blank apploader reporting function
@@ -52,20 +49,31 @@ SoftChip::SoftChip()
 {
     DI							= DIP::Instance();
     Controls					= Input::Instance();
+	Out							= Console::Instance();
+	Cfg							= Configuration::Instance();
     Standby_Flag				= false;
     Reset_Flag					= false;
     framebuffer					= 0;
     vmode						= 0;
-	Lang_Selected				= -1;
-	System_VMode				= true;
-
-    IOS_Loaded = false;
-    IOS_Version = Target_IOS;
 
     // Initialize subsystems
     VIDEO_Init();
 
-    // Load proper cIOS version
+	// Initialize FAT
+    Logger::Instance()->Initialize();
+
+	// Initialize Folders
+	Cfg->CreateFolder(ConfigData::DefaultFolder);
+
+	// Initialize Configuration	
+	Cfg->Read(ConfigData::DefaultFile);
+	Cfg->Save(ConfigData::DefaultFile); // Create
+
+	// Release FAT
+	Logger::Instance()->Release();
+	
+	// Load proper cIOS version
+    IOS_Version = Cfg->Data.IOS;
     IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
     if (!IOS_Loaded)
     {
@@ -73,9 +81,14 @@ SoftChip::SoftChip()
         IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
     }
 
-	// Initialize logger
+	// Initialize FAT
     Logger::Instance()->Initialize();
-	Logger::Instance()->Write("/softchip.log",  "Starting SoftChip...\n");
+
+	// Initialize Default Logger
+	Logger::Instance()->Write("/SoftChip/Default.log",  "Starting SoftChip...\r\n");
+
+	// Set Autoboot
+	Out->SetSilent(Cfg->Data.AutoBoot);
 
     // Initialize Video
     vmode = VIDEO_GetPreferredMode(0);
@@ -134,40 +147,92 @@ SoftChip::~SoftChip(){}
 void SoftChip::Initialize()
 {
     // TODO: Replace this with graphical banner (PNGU)
-    printf("Wii SoftChip v0.0.1-pre\n");
-    printf("This software is distributed under the terms\n");
-    printf("of the GNU General Public License (GPLv3)\n");
-    printf("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");
+    Out->Print("Wii SoftChip v0.0.1-pre\n");
+    Out->Print("This software is distributed under the terms\n");
+    Out->Print("of the GNU General Public License (GPLv3)\n");
+    Out->Print("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");
 
     // TODO: Make the IOS version configurable
     if (IOS_Loaded)
     {
-        printf("[+] IOS %d Loaded\n", IOS_Version);
-        if (IOS_Version != Target_IOS)
+        Out->Print("[+] IOS %d Loaded\n", IOS_Version);
+        if (IOS_Version != Cfg->Data.IOS)
         {
-            printf("Error: SoftChip requires a Custom IOS with dip-module\n");
-            printf("installed as IOS %d. Exiting...", Target_IOS);
-            sleep(5);
-            exit(0);
+			Out->SetSilent(false);
+            Out->Print("Error: SoftChip requires a Custom IOS with dip-module\n");
+            Out->Print("installed as IOS %d.\n\n", Cfg->Data.IOS);
+            SelectIOS();
         }
     }
     else
     {
-        printf("Error loading IOS.\n");
-        printf("SoftChip requires a Custom IOS with dip-module\n");
-        printf("installed as IOS %d. Exiting...", Target_IOS);
-        sleep(5);
-        exit(0);
+		Out->SetSilent(false);
+        Out->Print("[-] Error loading IOS.\n");
+        Out->Print("SoftChip requires a Custom IOS with dip-module\n");
+        Out->Print("installed as IOS %d.\n\n", Cfg->Data.IOS);
+        SelectIOS();
     }
 
     if (!DI->Initialize())
     {
-        printf("Error: Failed to initialize dip-module. Exiting...");
-        sleep (5);
-        exit(0);
+		Out->SetSilent(false);
+        Out->Print("[-] Error initializing dip-module.\n\n");
+        SelectIOS();
     }
 
     DI->Stop_Motor();
+}
+
+/*******************************************************************************
+ * SelectIOS: Select the IOS
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void SoftChip::SelectIOS()
+{
+    Out->SetSilent(false);
+	Out->Print("SoftChip will try to load the selected IOS on startup.\n");
+	Out->Print("Press the (A) Button to save and reboot.\n\n");
+
+	Out->StartMenu();
+	Console::Option *oIOS = Out->CreateOption("Use IOS: ", 0, 256, Cfg->Data.IOS);
+
+	while (true)
+	{
+		// Update Input
+		Controls->Scan();
+
+		// Faster Selecting
+		if (Controls->Up.Active) oIOS->Index += 20;
+		if (Controls->Down.Active) oIOS->Index -= 20;
+
+		if (Controls->Accept.Active)
+		{
+			Out->Print("Saving and Returning...\n");
+			Cfg->Save(ConfigData::DefaultFile);
+            exit(0);
+		}
+
+		if (Standby_Flag)
+        {
+            Controls->Terminate();
+            STM_ShutdownToStandby();
+        }
+
+        else if (Reset_Flag)
+        {
+            STM_RebootSystem();
+        }
+
+		// Update Menu
+		Out->UpdateMenu(Controls);
+		Cfg->Data.IOS = oIOS->Index;
+
+        VIDEO_WaitVSync();
+    }
 }
 
 /*******************************************************************************
@@ -183,7 +248,7 @@ void SoftChip::Set_VideoMode(char Region)
     // TODO: Some exception handling is needed here
     unsigned int Video_Mode;
 
-	if (System_VMode)
+	if (Cfg->Data.SysVMode)
 	{
 		switch (CONF_GetVideo()) {
 			case CONF_VIDEO_NTSC:
@@ -255,7 +320,7 @@ bool SoftChip::Set_GameLanguage(void *Address, int Size)
 		{
 			if (*Addr == 0x88610008)
 			{
-				*Addr = (unsigned int)(0x38600000 | Lang_Selected);
+				*Addr = (unsigned int)(0x38600000 | Cfg->Data.Language);
 				return true;
 			}
 		}
@@ -307,16 +372,30 @@ void SoftChip::Reboot()
 
 void SoftChip::Run()
 {
-	std::string Languages[]	= { "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
+	if (Cfg->Data.AutoBoot)
+	{
+		// Wait 2 seconds for Button Press
+		if (!Controls->Wait_ButtonPress(&Controls->Menu, 2))
+		{
+			Load_Disc();
+		}
 
-	int Index				= 0;
-	int Cols				= 0;
-	int Rows				= 0;
+		// Cancel Autoboot
+		Out->SetSilent(false);
+	}
 
-	CON_GetMetrics(&Cols, &Rows);
-	printf("Press the (A) button to continue.\n");
-	printf("Use the Arrows to change settings.\n\n");
-	printf("\x1b[s"); // Save Position
+	std::string Languages[]	= { "System Default", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
+	std::string VModes[] = { "System Settings", "Disc Region" };
+	std::string BoolOption[] = { "Disabled", "Enabled" };
+
+	Out->Print("Press the (A) button to continue.\n");
+	Out->Print("Press the (+) button to select IOS.\n");
+	Out->Print("Use the D-Pad to change settings.\n\n");
+
+	Out->StartMenu();
+	Console::Option *oLang = Out->CreateOption("Game's Language: ", Languages, 11, Cfg->Data.Language + 1);
+	Console::Option *oMode = Out->CreateOption("Set Video Mode using: ", VModes, 2, !Cfg->Data.SysVMode);
+	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
 
 	settime(secs_to_ticks(time(NULL) - 946684800));
 
@@ -327,30 +406,22 @@ void SoftChip::Run()
 
         if (Controls->Exit.Active)
 		{
+			Out->Print("Returning...\n");
+			Cfg->Save(ConfigData::DefaultFile);
             exit(0);
 		}
 
         if (Controls->Accept.Active)
         {
+			Cfg->Save(ConfigData::DefaultFile);
             Load_Disc();
+			Out->ReStartMenu();
         }
 
-        if (Controls->Up.Active || Controls->Down.Active)
-        {
-        	Index = !Index;
-        }
-
-        else if (Controls->Right.Active)
-        {
-        	if (Index == 0 && ++Lang_Selected > 0x09) Lang_Selected = -1;
-        	if (Index == 1) System_VMode = !System_VMode;
-        }
-
-        else if (Controls->Left.Active)
-        {
-        	if (Index == 0 && --Lang_Selected < -1) Lang_Selected = 0x09;
-        	if (Index == 1) System_VMode = !System_VMode;
-        }
+		if (Controls->Plus.Active)
+		{
+			SelectIOS();
+		}
 
         if (Standby_Flag)
         {
@@ -363,18 +434,11 @@ void SoftChip::Run()
             STM_RebootSystem();
         }
 
-
-
-		// Print Settings
-		printf("\x1b[u"); // Return
-		for (Rows = 0; Rows < Cols * 2; Rows++) printf(" "); // Clear Lines
-
-		printf("\x1b[u\x1b[%um", (Index == 0) ? 32 : 37); // Return and Set Color
-		printf("Game's Language: %s\n", (Lang_Selected == -1) ? "System Default" : Languages[Lang_Selected].c_str());
-
-		printf("\x1b[%um", (Index == 1) ? 32 : 37); // Set Color
-		printf("Set Video Mode using: %s\n\n", (System_VMode) ? "System Settings" : "Disc Settings");
-		printf("\x1b[37m"); // Reset Color
+		// Update Menu
+		Out->UpdateMenu(Controls);
+		Cfg->Data.Language = oLang->Index - 1;
+		Cfg->Data.SysVMode = !oMode->Index;
+		Cfg->Data.AutoBoot = oBoot->Index;
 
         VIDEO_WaitVSync();
     }
@@ -400,7 +464,7 @@ void SoftChip::Load_Disc()
 
     try
     {
-        printf("Loading Game...\n");
+        Out->Print("Loading Game...\n");
 
         DI->Wait_CoverClose();
         DI->Reset();
@@ -414,16 +478,16 @@ void SoftChip::Load_Disc()
         char Disc_ID[8];
         memset(Disc_ID, 0, sizeof(Disc_ID));
         memcpy(Disc_ID, &Header.ID, sizeof(Header.ID));
-        printf("Disc ID: %s\n",Disc_ID);
-        printf("Magic Number: 0x%x\n", Header.Magic);
-        printf("Disc Title: %s\n", Header.Title);
+        Out->Print("Disc ID: %s\n",Disc_ID);
+        Out->Print("Magic Number: 0x%x\n", Header.Magic);
+        Out->Print("Disc Title: %s\n", Header.Title);
 
         // Read partition descriptor and get offset to partition info
         dword Offset = Wii_Disc::Offsets::Descriptor;
         DI->Read_Unencrypted(&Descriptor, sizeof(Wii_Disc::Partition_Descriptor), Offset);
 
         Offset = Descriptor.Primary_Offset << 2;
-        printf("Partition Info is at: 0x%x\n", Offset);
+        Out->Print("Partition Info is at: 0x%x\n", Offset);
 
         // TODO: Support for additional partition types (secondary, tertiary, quaternary)
 		// TODO: Fix hardcoded values, ugly handling of 4+ partitions
@@ -450,11 +514,11 @@ void SoftChip::Load_Disc()
 
         if (!Offset)
 		{
-			printf("[-] No boot partition found.\n\n");
+			Out->Print("[-] No boot partition found.\n\n");
             return;
 		}
 
-        printf("Partition is located at: 0x%x\n", Offset);
+        Out->Print("Partition is located at: 0x%x\n", Offset);
 
         // Set Offset Base to start of partition
         DI->Set_OffsetBase(Offset);
@@ -475,7 +539,7 @@ void SoftChip::Load_Disc()
         // Get certificates from the cIOS
         cIOS::Instance()->GetCerts(&Certs, &C_Length);
 
-        printf("System certificates at: 0x%x\n", reinterpret_cast<dword>(Certs));
+        Out->Print("System certificates at: 0x%x\n", reinterpret_cast<dword>(Certs));
 
         // Read the buffer
         DI->Read_Unencrypted(Buffer, 0x800, Offset);
@@ -484,40 +548,40 @@ void SoftChip::Load_Disc()
         Ticket		= reinterpret_cast<signed_blob*>(Buffer);
         T_Length	= SIGNED_TIK_SIZE(Ticket);
 
-        printf("Ticket at: 0x%x\n", reinterpret_cast<dword>(Ticket));
+        Out->Print("Ticket at: 0x%x\n", reinterpret_cast<dword>(Ticket));
 
         // Get the TMD pointer
 
         Tmd = reinterpret_cast<signed_blob*>(Buffer + 0x2c0);
         MD_Length = SIGNED_TMD_SIZE(Tmd);
 
-        printf("Tmd at: 0x%x\n", reinterpret_cast<dword>(Tmd));
+        Out->Print("Tmd at: 0x%x\n", reinterpret_cast<dword>(Tmd));
 
         static byte	Tmd_Buffer[0x49e4] __attribute__((aligned(0x20)));
 
         // Open Partition
         if (DI->Open_Partition(Partition_Info.Offset, 0,0,0, Tmd_Buffer) < 0)
         {
-            printf("[-] Error opening partition.\n\n");
+            Out->Print("[-] Error opening partition.\n\n");
             return;
         }
 
-        printf("[+] Partition opened successfully.\n");
+        Out->Print("[+] Partition opened successfully.\n");
 
         // Read apploader header from 0x2440
 
         static Apploader::Header Loader __attribute__((aligned(0x20)));
-        printf("Reading apploader header.\n");
+        Out->Print("Reading apploader header.\n");
         DI->Read(&Loader, sizeof(Apploader::Header), Wii_Disc::Offsets::Apploader);
         DCFlushRange(&Loader, 0x20);
 
-        printf("Payload Information:\n");
-        printf("\tRevision:\t%s\n", Loader.Revision);
-        printf("\tEntry:\t0x%x\n", (int)Loader.Entry_Point);
-        printf("\tSize:\t%d bytes\n", Loader.Size);
-        printf("\tTrailer:\t%d bytes\n\n", Loader.Trailer_Size);
+        Out->Print("Payload Information:\n");
+        Out->Print("\tRevision:\t%s\n", Loader.Revision);
+        Out->Print("\tEntry:\t0x%x\n", (int)Loader.Entry_Point);
+        Out->Print("\tSize:\t%d bytes\n", Loader.Size);
+        Out->Print("\tTrailer:\t%d bytes\n\n", Loader.Trailer_Size);
 
-        printf("Reading payload.\n");
+        Out->Print("Reading payload.\n");
 
         // Read apploader.bin
         DI->Read((void*)Memory::Apploader,Loader.Size + Loader.Trailer_Size, Wii_Disc::Offsets::Apploader + 0x20);
@@ -530,7 +594,7 @@ void SoftChip::Load_Disc()
         Apploader::Exit		Exit	= 0;
 
         // Grab function pointers from apploader
-        printf("Retrieving function pointers from apploader.\n");
+        Out->Print("Retrieving function pointers from apploader.\n");
         Start(&Enter, &Load, &Exit);
 
         /*
@@ -540,7 +604,7 @@ void SoftChip::Load_Disc()
          *
 
         // Set reporting callback
-        printf("Setting reporting callback.\n");
+        Out->Print("Setting reporting callback.\n");
         Apploader::Report Report = (Apploader::Report)printf;
         Enter(Report);
 
@@ -551,12 +615,12 @@ void SoftChip::Load_Disc()
         void*	Address = 0;
         int		Section_Size;
         int		Partition_Offset;
-		bool	Lang_Patched = (Lang_Selected == -1);
+		bool	Lang_Patched = (Cfg->Data.Language == -1);
 
-        printf("Loading.\t\t\n");
+        Out->Print("Loading.\t\t\n");
         while(Load(&Address, &Section_Size, &Partition_Offset))
         {
-            printf(".");
+            Out->Print(".");
 
             if (!Address) throw ("Null pointer from apploader");
 
@@ -581,7 +645,7 @@ void SoftChip::Load_Disc()
         // Retrieve application entry point
         void* Entry = Exit();
 
-        printf("Launching Application!\n\n");
+        Out->Print("Launching Application!\n\n");
 
         // Set video mode for discs native region
         Set_VideoMode(*(char*)Memory::Disc_Region);
@@ -593,10 +657,6 @@ void SoftChip::Load_Disc()
 
         // Cleanup loader information
         DI->Close();
-
-		// Shutdown sdio
-		sdio_Startup();
-		sdio_Deinitialize();
 
         // Shutdown libogc services
         SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
@@ -615,7 +675,7 @@ void SoftChip::Load_Disc()
     }
     catch (const char* Message)
     {
-        printf("Exception: %s\n", Message);
+        Out->Print("Exception: %s\n\n", Message);
         return;
     }
 }

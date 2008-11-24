@@ -19,7 +19,7 @@
 #include <gccore.h>
 
 //--------------------------------------
-// Input Class
+// Struct Control
 
 struct Control
 {
@@ -27,6 +27,9 @@ struct Control
 	int		WPAD_Binding;
 	int		GC_Binding;
 };
+
+//--------------------------------------
+// Input Class
 
 class Input
 {
@@ -38,11 +41,15 @@ public:
 	Control	Accept;
 	Control Cancel;
 	Control Exit;
+	Control Menu;
+	Control Plus;
 
 public:
 	void Initialize(void);
 	void Terminate();
 	void Scan();
+
+	bool Wait_ButtonPress(Control *Button, int Timeout);
 
 protected:
 	void Activate(Control* Command, bool Active);

@@ -15,12 +15,43 @@
 //--------------------------------------
 // Includes
 
+#include <string>
+
 #include <ogc/pad.h>
 #include <wiiuse/wpad.h>
+
 #include "Input.h"
 
+//--------------------------------------
+// Input Class
+
+/*******************************************************************************
+ * Input: Default constructor
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
 Input::Input(){}
+
+/*******************************************************************************
+ * ~Input: Default destructor
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
 Input::~Input(){}
+
+/*******************************************************************************
+ * Initialize: Initialize Input Class
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
 
 void Input::Initialize()
 {
@@ -35,6 +66,8 @@ void Input::Initialize()
 	Accept.Active	= false;
 	Cancel.Active	= false;
 	Exit.Active		= false;
+	Menu.Active		= false;
+	Plus.Active		= false;
 
 	Up.WPAD_Binding		= WPAD_BUTTON_UP | WPAD_CLASSIC_BUTTON_UP;
 	Up.GC_Binding		= PAD_BUTTON_UP;
@@ -56,18 +89,48 @@ void Input::Initialize()
 
 	Exit.WPAD_Binding	= WPAD_BUTTON_HOME | WPAD_CLASSIC_BUTTON_HOME;
 	Exit.GC_Binding		= PAD_BUTTON_START;
+
+	Menu.WPAD_Binding	= WPAD_BUTTON_1;
+	Menu.GC_Binding		= 0;
+
+	Plus.WPAD_Binding	= WPAD_BUTTON_PLUS | WPAD_CLASSIC_BUTTON_PLUS;
+	Plus.GC_Binding		= PAD_BUTTON_X;
 }
+
+/*******************************************************************************
+ * Terminate: Terminate Input Class
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
 
 void Input::Terminate()
 {
 	WPAD_Shutdown();
 }
 
+/*******************************************************************************
+ * Activate: Change Control Status
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
 void Input::Activate(Control* Command, bool Active)
 {
 	if (!Command) return;
 	Command->Active = Active;
 }
+
+/*******************************************************************************
+ * Scan: Update Controls
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
 
 void Input::Scan()
 {
@@ -77,38 +140,36 @@ void Input::Scan()
 	int WPAD_Buttons = WPAD_ButtonsDown(0);
 	int GC_Buttons	= PAD_ButtonsDown(0);
 
-	if (WPAD_Buttons & Up.WPAD_Binding || GC_Buttons & Up.GC_Binding)
-			Up.Active = true;
-		else
-			Up.Active = false;
+	Activate(&Up, (WPAD_Buttons & Up.WPAD_Binding || GC_Buttons & Up.GC_Binding));
+	Activate(&Down, (WPAD_Buttons & Down.WPAD_Binding || GC_Buttons & Down.GC_Binding));
+	Activate(&Left, (WPAD_Buttons & Left.WPAD_Binding || GC_Buttons & Left.GC_Binding));
+	Activate(&Right, (WPAD_Buttons & Right.WPAD_Binding || GC_Buttons & Right.GC_Binding));
+	Activate(&Accept, (WPAD_Buttons & Accept.WPAD_Binding || GC_Buttons & Accept.GC_Binding));
+	Activate(&Cancel, (WPAD_Buttons & Cancel.WPAD_Binding || GC_Buttons & Cancel.GC_Binding));
+	Activate(&Exit, (WPAD_Buttons & Exit.WPAD_Binding || GC_Buttons & Exit.GC_Binding));
+	Activate(&Menu, (WPAD_Buttons & Menu.WPAD_Binding || GC_Buttons & Menu.GC_Binding));
+	Activate(&Plus, (WPAD_Buttons & Plus.WPAD_Binding || GC_Buttons & Plus.GC_Binding));
+}
 
-	if (WPAD_Buttons & Down.WPAD_Binding || GC_Buttons & Down.GC_Binding)
-				Down.Active = true;
-			else
-				Down.Active = false;
+/*******************************************************************************
+ * Wait_ButtonPress: Wait for Input
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns true if pressed
+ *
+ ******************************************************************************/
 
-	if (WPAD_Buttons & Left.WPAD_Binding || GC_Buttons & Left.GC_Binding)
-				Left.Active = true;
-			else
-				Left.Active = false;
+bool Input::Wait_ButtonPress(Control *Button, int Timeout)
+{
+	time_t Sec = time(NULL) + Timeout;
 
-	if (WPAD_Buttons & Right.WPAD_Binding || GC_Buttons & Right.GC_Binding)
-				Right.Active = true;
-			else
-				Right.Active = false;
+	while (time(NULL) < Sec || !Timeout)
+	{
+		Scan();
 
-	if (WPAD_Buttons & Accept.WPAD_Binding || GC_Buttons & Accept.GC_Binding)
-		Accept.Active = true;
-	else
-		Accept.Active = false;
+		if (Button->Active)
+			return true;
+	}
 
-	if (WPAD_Buttons & Cancel.WPAD_Binding || GC_Buttons & Cancel.GC_Binding)
-			Cancel.Active = true;
-		else
-			Cancel.Active = false;
-
-	if (WPAD_Buttons & Exit.WPAD_Binding || GC_Buttons & Exit.GC_Binding)
-			Exit.Active = true;
-		else
-			Exit.Active = false;
+	return false;
 }

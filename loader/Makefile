@@ -17,7 +17,7 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	SoftChip
 BUILD		:=	build
-SOURCES		:=	source source/SoftChip source/DIP source/cIOS source/Logger source/Input
+SOURCES		:=	source source/SoftChip source/DIP source/cIOS source/Logger source/Input source/Configuration source/Console
 DATA		:=	data  
 INCLUDES	:=	include
 

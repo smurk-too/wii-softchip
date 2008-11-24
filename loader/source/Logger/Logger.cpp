@@ -23,6 +23,9 @@
 
 #include "Logger.h"
 
+extern "C" bool sdio_Startup(void);
+extern "C" bool sdio_Deinitialize(void);
+
 //--------------------------------------
 // Logger Class
 
@@ -73,9 +76,14 @@ void Logger::Initialize()
 
 void Logger::Release()
 {
+	// Unmount FAT
     if (!fatUnmount(PI_INTERNAL_SD)) {
         fatUnsafeUnmount(PI_INTERNAL_SD);
     }
+
+	// Shutdown sdio
+	sdio_Startup();
+	sdio_Deinitialize();
 }
 
 /*******************************************************************************

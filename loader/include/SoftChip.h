@@ -19,8 +19,8 @@
 #include <ogcsys.h>
 #include "DIP.h"
 #include "Input.h"
-
-#define Target_IOS 249 // Just for now
+#include "Console.h"
+#include "Configuration.h"
 
 //--------------------------------------
 // SoftChip Class
@@ -28,17 +28,17 @@
 class SoftChip
 {
 protected:
-	DIP*		DI;							// DIP interface
-	Input*		Controls;
+	DIP*			DI;						// DIP interface
+	Input*			Controls;
+	Console*		Out;
+	Configuration*	Cfg;
 
-	bool		Standby_Flag;				// Flag is set when power button is pressed
-	bool		Reset_Flag;					// Flag is set when reset button is pressed
-	GXRModeObj* vmode;
-	void*		framebuffer;
-	int			IOS_Version;
-	bool		IOS_Loaded;
-	int			Lang_Selected;				// Language Selected
-	bool		System_VMode;				// Use System Video Mode
+	bool			Standby_Flag;			// Flag is set when power button is pressed
+	bool			Reset_Flag;				// Flag is set when reset button is pressed
+	GXRModeObj*		vmode;
+	void*			framebuffer;
+	int				IOS_Version;
+	bool			IOS_Loaded;
 
 public:
 	void Initialize();					// Initializer method
@@ -49,6 +49,7 @@ private:
 	static void Reboot();				// Return to system menu
 
 	void 	Load_Disc();								// Loads the disc
+	void	SelectIOS();								// Select the IOS
 	void	Set_VideoMode(char Region);					// Set Video Mode
 	bool	Set_GameLanguage(void *Address, int Size);	// Patch Game's Language
 

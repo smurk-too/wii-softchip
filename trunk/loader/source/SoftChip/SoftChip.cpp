@@ -397,8 +397,6 @@ void SoftChip::Run()
 	Console::Option *oMode = Out->CreateOption("Set Video Mode using: ", VModes, 2, !Cfg->Data.SysVMode);
 	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
 
-	settime(secs_to_ticks(time(NULL) - 946684800));
-
     while (true)
     {
         // Input
@@ -461,6 +459,8 @@ void SoftChip::Load_Disc()
     memset(&Header, 0, sizeof(Wii_Disc::Header));
     memset(&Descriptor, 0, sizeof(Wii_Disc::Partition_Descriptor));
     memset(&Partition_Info, 0, sizeof(Wii_Disc::Partition_Info));
+
+	settime(secs_to_ticks(time(NULL) - 946684800));
 
     try
     {

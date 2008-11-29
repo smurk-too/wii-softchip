@@ -117,7 +117,7 @@ int DIP::Inquiry(void* Drive_ID)
 	Command[0] = Ioctl::DI_Inquiry << 24;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_Inquiry, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_Inquiry)";
 
 	memcpy(Drive_ID, Output, 8);
 	Unlock();
@@ -141,7 +141,7 @@ int DIP::Read_DiscID(unsigned long long* Disc_ID)
 	Command[0] = Ioctl::DI_ReadID << 24;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_ReadID, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_ReadID)";
 
 	memcpy(Disc_ID, Output, 8);
 	Unlock();
@@ -170,7 +170,7 @@ int DIP::Read(void* Buffer, unsigned int size, unsigned int offset)
 	Command[2] = offset >> 2;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_Read, Command, 0x20, Buffer, size);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_Read)";
 
 	Unlock();
 
@@ -198,7 +198,7 @@ int DIP::Read_Unencrypted(void* Buffer, unsigned int size, unsigned int offset)
 	Command[2] = offset >> 2;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_ReadUnencrypted, Command, 0x20, Buffer, size);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_ReadUnencrypted)";
 
 	Unlock();
 
@@ -221,7 +221,7 @@ int DIP::Wait_CoverClose()
 	Command[0] = Ioctl::DI_WaitCoverClose << 24;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_WaitCoverClose, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_WaitCoverClose)";
 
 	Unlock();
 
@@ -244,7 +244,7 @@ int DIP::Reset()
 	Command[1] = 1;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_Reset, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_Reset)";
 
 	Unlock();
 
@@ -268,7 +268,7 @@ int DIP::Enable_DVD()
 	Command[1] = 1;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_EnableDVD, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_EnableDVD)";
 
 	Unlock();
 
@@ -292,7 +292,7 @@ int DIP::Set_OffsetBase(unsigned int Base)
 	Command[1] = Base >> 2;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_SetOffsetBase, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_SetOffsetBase)";
 
 	Unlock();
 
@@ -315,7 +315,7 @@ int DIP::Get_OffsetBase(unsigned int* Base)
 	Command[0] = Ioctl::DI_GetOffsetBase << 24;
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_GetOffsetBase, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_GetOffsetBase)";
 
 	if (Ret == 1) *Base = *((unsigned int*)Output);
 	Unlock();
@@ -353,7 +353,7 @@ int DIP::Open_Partition(unsigned int Offset, void* Ticket, void* Certificate, un
 
 	int Ret = IOS_Ioctlv(Device_Handle, Ioctl::DI_OpenPartition, 3,2,Vectors);
 
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_OpenPartition)";
 
 	Unlock();
 

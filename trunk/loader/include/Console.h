@@ -23,37 +23,60 @@
 #include "Memory_Map.h"
 #include "Input.h"
 
+using namespace std;
+
+//--------------------------------------
+// Colors
+
+#define Color_Black		30
+#define Color_Red		31
+#define Color_Green		32
+#define Color_Yellow	33
+#define Color_Blue		34
+#define Color_Magenta	35
+#define Color_Cyan		36
+#define Color_White		37
+
 //--------------------------------------
 // Console Class
 
 class Console
 {
 public:
-	void	Print(const char *Format, ...);
-	void	SetSilent(bool Value);
-	void	Clear();
-
 	struct Option
 	{
-		int			Index;
-		dword		Max;
-		std::string	Message;
-		std::string	*Options;
+		int		Index;
+		int		Max;
+		string	Message;
+		string	*Options;
 	};
 
-	void	StartMenu();
-	Option*	CreateOption(std::string Message, std::string *Options, dword Max, dword Value);
-	void	UpdateMenu(Input *Controls);
-	void	ClearMenu();
-	void	ReStartMenu();
+protected:
+	// Buffer Related
+	string	Output;		// Console Buffer
+	dword	MenuStart;	// Start Position of the Menu
+	bool	Silent;		// Silent Option
+
+	// Menu Related	
+	vector<Option*> Menu;	// Vector
+	int		iMenu;			// Menu Index
+	bool	SavedPos;		// Is the position saved?
+
+public:
+	// Console Related
+	void	Print(const char *Format, ...);		// Print Formatted
+	void	PrintErr(const char *Format, ...);	// Print Formatted (Red)
+	void	SetColor(int Color, bool Bright);	// Set Foreground Color
+	void	SetSilent(bool Enable);				// Enable or Disable Silent Option
+	void	Clear();							// Clear the Console
+	
+	// Menu Related
+	void	StartMenu();						// Prepare Console for Menu
+	Option*	CreateOption(string Message, string *Options, int Max, int Value);
+	void	UpdateMenu(Input *Controls);		// Print Menu
+	void	ClearMenu();						// Clear Menu
 
 protected:
-	std::string	Output;
-	bool		Silent;
-
-	std::vector<Option*> Menu;
-	dword iMenu;
-
 	Console();
 	Console(const Console&);
 	Console& operator= (const Console&);

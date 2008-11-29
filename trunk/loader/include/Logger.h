@@ -28,6 +28,9 @@ public:
 	void Release();
 	void Write(const char* Filename, const char* Message, ...);
 
+	bool ShowTime;
+	bool FatOk;
+
 protected:
 	Logger();
 	Logger(const Logger&);

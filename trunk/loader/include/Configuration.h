@@ -22,17 +22,27 @@
 
 #include "Memory_Map.h"
 
-#define Default_IOS 249
+#define Default_IOS 36
 
 //--------------------------------------
 // ConfigData
 
 namespace ConfigData
 {
-	const byte LastVersion = 1;
+	const byte LastVersion = 2;
 	const char Signature[] = "B5662343D78AD6D";
 	const char DefaultFolder[] = "/SoftChip";
 	const char DefaultFile[] = "/SoftChip/Default.cfg";
+
+	struct Ver2
+	{
+		char		IOS;
+		signed char	Language;
+		bool		SysVMode;
+		bool		AutoBoot;
+		bool		Silent;
+		bool		Logging;
+	} __attribute__((packed));
 
 	struct Ver1
 	{
@@ -50,13 +60,13 @@ class Configuration
 {
 public:
 	bool CreateFolder(const char* Path);
-	void Read(const char* Path);
+	bool Read(const char* Path);
 	bool Save(const char* Path);
 
-	ConfigData::Ver1 Data;
+	ConfigData::Ver2 Data;
 
 protected:
-	virtual void Parse(FILE *fp);
+	virtual bool Parse(FILE *fp);
 
 	Configuration();
 	Configuration(const Configuration&);
@@ -75,9 +85,15 @@ public:
 //--------------------------------------
 // Derived Configurations
 
+class ConfigVer2 : public Configuration
+{
+protected:
+	bool Parse(FILE *fp);
+};
+
 class ConfigVer1 : public Configuration
 {
 protected:
-	void Parse(FILE *fp);
+	bool Parse(FILE *fp);
 };
 

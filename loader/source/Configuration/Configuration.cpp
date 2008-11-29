@@ -16,9 +16,9 @@
 // Includes
 
 #include <string.h>
-#include <stdlib.h>
 
 #include "Configuration.h"
+#include "Logger.h"
 
 //--------------------------------------
 // Configuration Class
@@ -53,6 +53,10 @@ Configuration::~Configuration() {}
 
 bool Configuration::CreateFolder(const char* Path)
 {
+	// Avoid errors
+	if (!Logger::Instance()->FatOk)
+		return false;
+
 	DIR_ITER* dir = diropen(Path);
 
 	if (dir == NULL)
@@ -75,26 +79,30 @@ bool Configuration::CreateFolder(const char* Path)
  * Read: Read a Config File
  * -----------------------------------------------------------------------------
  * Return Values:
- *	returns void
+ *	returns bool
  *
  ******************************************************************************/
 
-void Configuration::Read(const char *Path)
+bool Configuration::Read(const char *Path)
 {
-	Configuration *Parser = NULL;
-	byte Buffer[64];
-	FILE *fp;
+	// Avoid errors
+	if (!Logger::Instance()->FatOk)
+		return false;
 
-	// Open File
-    fp = fopen(Path, "rb");
-    if (fp == NULL)
-    {
-		Parse(0); // Use Default Settings
-        return;
-    }
+	Configuration *Parser = NULL;
+	bool Result = false;
+	byte Buffer[64];
+	FILE *fp = NULL;
 
 	try
 	{
+		// Open File
+		fp = fopen(Path, "rb");
+		if (fp == NULL)
+		{
+			throw "Open Error";
+		}
+		
 		// Read Header
 		if (fread(Buffer, 1, 16, fp) != 16)
 		{
@@ -110,6 +118,10 @@ void Configuration::Read(const char *Path)
 		// Get File Version		
 		switch (Buffer[15]) 
 		{
+			case 2:		// Version 2
+				Parser = new ConfigVer2();
+				break;
+
 			case 1:		// Version 1
 				Parser = new ConfigVer1();
 				break;
@@ -119,10 +131,16 @@ void Configuration::Read(const char *Path)
 		}
 		
 		// Parse
-		Parser->Parse(fp);
+		if (!Parser->Parse(fp))
+		{
+			throw "Parse Error";
+		}
 
 		// Copy Settings
 		memcpy(&Data, &Parser->Data, sizeof(Data));
+
+		// Success
+		Result = true;
 	}
 	catch (const char* Message)
     {
@@ -133,6 +151,7 @@ void Configuration::Read(const char *Path)
 	// Close
 	if (Parser) delete Parser;
 	if (fp) fclose(fp);
+	return Result;
 }
 
 /*******************************************************************************
@@ -145,6 +164,10 @@ void Configuration::Read(const char *Path)
 
 bool Configuration::Save(const char* Path)
 {
+	// Avoid errors
+	if (!Logger::Instance()->FatOk)
+		return false;
+
 	FILE *fp;
 
 	// Open File
@@ -170,33 +193,42 @@ bool Configuration::Save(const char* Path)
  * Parse: Parse the file
  * -----------------------------------------------------------------------------
  * Return Values:
- *	returns void
+ *	returns bool
  *
  ******************************************************************************/
 
-void Configuration::Parse(FILE *fp)	// Default Settings
+bool Configuration::Parse(FILE *fp)	// Default Settings
 {
 	Data.IOS = Default_IOS;
 	Data.Language = -1;
 	Data.SysVMode = true;
 	Data.AutoBoot = false;
+	Data.Silent = false;
+	Data.Logging = false;
+	return true;
 }
 
-void ConfigVer1::Parse(FILE *fp)	// Ver1 Settings
+bool ConfigVer2::Parse(FILE *fp)	// Ver2 Settings
 {
-	// Read Default
-	Configuration::Parse(0);
+	// Get File Data
+	if (fread(&Data, 1, sizeof(Data), fp) != sizeof(Data))
+		return false;
+	else
+		return true;
+}
 
+bool ConfigVer1::Parse(FILE *fp)	// Ver1 Settings
+{
 	// Get File Data
 	ConfigData::Ver1 Temp;
 	if (fread(&Temp, 1, sizeof(Temp), fp) != sizeof(Temp))
-	{
-		return;
-	}
+		return false;
 
 	// Convert
+	Configuration::Parse(0);
 	Data.IOS = Temp.IOS;
 	Data.Language = Temp.Language;
 	Data.AutoBoot = Temp.AutoBoot;
 	Data.SysVMode = Temp.SysVMode;
+	return true;
 }

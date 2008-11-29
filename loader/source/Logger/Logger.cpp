@@ -16,10 +16,8 @@
 // Includes
 
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <stdarg.h>
+#include <ogcsys.h>
 
 #include "Logger.h"
 
@@ -62,8 +60,11 @@ void Logger::Initialize()
     // Mount the file system
     if (!fatInitDefault())
     {
+		FatOk = false;
         return;
     }
+
+	FatOk = true;
 }
 
 /*******************************************************************************
@@ -96,6 +97,9 @@ void Logger::Release()
 
 void Logger::Write(const char* Filename, const char* Message, ...)
 {
+	// Avoid errors
+	if (!FatOk) return;
+
     va_list argp;
     FILE *fp;
 
@@ -105,14 +109,22 @@ void Logger::Write(const char* Filename, const char* Message, ...)
     {
         fp = fopen(Filename, "wb");
         if (fp == NULL)
-        {
-            // If you are here, it's mostly because libfat init got whacked by ios_reload
-			// or there's no SD card inserted
-            return;
-        }
+			return;
     }
 
-    // Write the formatted message
+	// Write Time Tag
+	if (ShowTime)
+	{
+		time_t NowTime;
+		struct tm FTime;
+
+		time(&NowTime);
+		localtime_r(&NowTime, &FTime);
+
+		fprintf(fp, "[%02d/%02d %02d:%02d:%02d] ", FTime.tm_mday, FTime.tm_mon, FTime.tm_hour, FTime.tm_min, FTime.tm_sec);
+	}
+
+	// Write the formatted message    
     va_start(argp, Message);
     vfprintf(fp, Message, argp);
     va_end(argp);

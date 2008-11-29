@@ -15,8 +15,6 @@
 //--------------------------------------
 // Includes
 
-#include <stdlib.h>
-
 #include "Console.h"
 
 //--------------------------------------
@@ -52,33 +50,42 @@ Console::~Console() {}
 
 void Console::Print(const char *Format, ...)
 {
-	char Buffer[256];
+	char Buffer[1024];
 	va_list args;
 
 	va_start(args, Format);
 	vsprintf(Buffer, Format, args);
 
 	va_end(args);
-	Output += std::string(Buffer);
+	Output += string(Buffer);
 
-	if (!Silent) printf(Buffer);	
+	if (!Silent) printf(Buffer);
 }
 
 /*******************************************************************************
- * SetSilent: Activate Silent Status
+ * PrintErr: Red printf
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns void
  *
  ******************************************************************************/
 
-void Console::SetSilent(bool Value)
+void Console::PrintErr(const char *Format, ...)
 {
-	if (Silent == Value) return;
-	Silent = Value;
+	SetColor(Color_Red, true);
 
-	printf("\x1b[J"); // Clear Screen
-	if (!Value) printf(Output.c_str());
+	char Buffer[1024];
+	va_list args;
+
+	va_start(args, Format);
+	vsprintf(Buffer, Format, args);
+
+	va_end(args);
+	Output += string(Buffer);
+
+	if (!Silent) printf(Buffer);
+
+	SetColor(Color_White, false);
 }
 
 /*******************************************************************************
@@ -91,8 +98,50 @@ void Console::SetSilent(bool Value)
 
 void Console::Clear()
 {
+	// Clear Output Buffer
 	Output.clear();
-	printf("\x1b[J"); // Clear Screen
+
+	// Clear Console
+	printf("\x1b[J");
+}
+
+/*******************************************************************************
+ * SetColor: Change Foreground Color
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Console::SetColor(int Color, bool Bright)
+{
+	Print("\x1b[%u;%um", Color, Bright);
+}
+
+/*******************************************************************************
+ * SetSilent: Activate Silent Status
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Console::SetSilent(bool Enable)
+{
+	// Avoid Clearing
+	if (Silent == Enable) return;
+
+	// Set
+	Silent = Enable;
+
+	// Clear Console
+	printf("\x1b[J");
+
+	// Re-Print
+	if (!Enable)
+	{
+		printf(Output.c_str()); 
+	}
 }
 
 /*******************************************************************************
@@ -105,9 +154,10 @@ void Console::Clear()
 
 void Console::StartMenu()
 {
+	// Clear Previous Menu
 	ClearMenu();
-	if (Silent) return;
-	printf("\x1b[s");
+	SavedPos = false;
+	MenuStart = Output.length();
 }
 
 /*******************************************************************************
@@ -118,9 +168,8 @@ void Console::StartMenu()
  *
  ******************************************************************************/
 
-Console::Option *Console::CreateOption(std::string Message, std::string *Options, dword Max, dword Value)
+Console::Option *Console::CreateOption(string Message, string *Options, int Max, int Value)
 {
-	if (Silent) return NULL;
 	Option *Op = new Option();
 
 	Op->Index = Value;
@@ -142,46 +191,56 @@ Console::Option *Console::CreateOption(std::string Message, std::string *Options
 
 void Console::UpdateMenu(Input *Controls)
 {
-	if (Silent || !Menu.size()) return;
+	if (Menu.size() == 0) return;
+	int Cols = 0, i = 0;
 
-	dword i		= 0;
-	int Cols	= 0;
-	CON_GetMetrics(&Cols, (int*)&i);
+	// Get Console Metrics
+	CON_GetMetrics(&Cols, &i);
 
 	// Change Option
-	if (Controls->Up.Active)
-		iMenu = ((!iMenu) ? Menu.size() : iMenu) - 1;
-	else if (Controls->Down.Active)
-		if (++iMenu >= Menu.size()) iMenu = 0;
+	iMenu += (Controls->Down.Active) - (Controls->Up.Active);
+
+	if (iMenu < 0) iMenu += Menu.size();
+	if (iMenu >= (int)Menu.size()) iMenu -= Menu.size();
 
 	// Change Value
-	if (Controls->Left.Active)
-		--Menu[iMenu]->Index;
-	else if (Controls->Right.Active)
-		++Menu[iMenu]->Index;
+	Menu[iMenu]->Index += (Controls->Right.Active) - (Controls->Left.Active);
 
-	// Fix Position
-	if (Menu[iMenu]->Index < 0) Menu[iMenu]->Index = Menu[iMenu]->Max + Menu[iMenu]->Index;
-	if (Menu[iMenu]->Index >= (int)Menu[iMenu]->Max) Menu[iMenu]->Index = Menu[iMenu]->Index - Menu[iMenu]->Max;
+	if (Menu[iMenu]->Index < 0) Menu[iMenu]->Index += Menu[iMenu]->Max;
+	if (Menu[iMenu]->Index >= (int)Menu[iMenu]->Max) Menu[iMenu]->Index -= Menu[iMenu]->Max;
 
-	printf("\x1b[u"); // Return
-	for (i = 0; i < Cols * Menu.size(); i++) printf(" "); // Clear Lines
-	printf("\x1b[u"); // Return
+	// Erase Previous Menu
+	Output.erase(MenuStart);
 
-	for (i = 0; i < Menu.size(); i++)
+	// Return and Erase
+	if (!Silent && SavedPos)
 	{
-		printf(Menu[i]->Message.c_str()); // Print Message
-		printf("\x1b[%um", (iMenu == i) ? 32 : 37); // Set Color
+		printf("\x1b[u");
+		printf("\x1b[%uA", Menu.size() + 1);
 
-		if (Menu[i]->Options)
-			printf("%s\n", Menu[i]->Options[Menu[i]->Index].c_str());
-		else
-			printf("%d\n", Menu[i]->Index);
-
-		printf("\x1b[37m"); // Reset Color
+		for (i = 0; i < Cols * (int)Menu.size(); i++) printf(" "); // Clear Lines
+		printf("\r\x1b[%uA", Menu.size());
 	}
 
-	printf("\n"); // End of Menu
+	for (i = 0; i < (int)Menu.size(); i++)
+	{
+		Print(Menu[i]->Message.c_str());				// printf Message
+		if (iMenu == i) SetColor(Color_Green, false);	// Set Color
+
+		if (Menu[i]->Options)
+			Print("%s\n", Menu[i]->Options[Menu[i]->Index].c_str());
+		else
+			Print("%d\n", Menu[i]->Index);
+
+		SetColor(Color_White, false);
+	}
+
+	// End of Menu
+	Print("\n");
+
+	// Save Position
+	printf("\x1b[s");
+	SavedPos = true;
 }
 
 /*******************************************************************************
@@ -204,19 +263,5 @@ void Console::ClearMenu()
 
 		// Clear Vector
 		Menu.clear();
-	}
-}
-
-/*******************************************************************************
- * ReStartMenu: Re-Save Position
- * -----------------------------------------------------------------------------
- * Return Values:
- *	returns void
- *
- ******************************************************************************/
-
-void Console::ReStartMenu()
-{
-	if (Silent) return;
-	printf("\x1b[s");
+	}	
 }

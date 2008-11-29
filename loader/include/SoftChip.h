@@ -21,6 +21,12 @@
 #include "Input.h"
 #include "Console.h"
 #include "Configuration.h"
+#include "Logger.h"
+
+#define Phase_IOS		0
+#define Phase_Menu		1
+#define Phase_SelectIOS	2
+#define Phase_Play		3
 
 //--------------------------------------
 // SoftChip Class
@@ -29,10 +35,12 @@ class SoftChip
 {
 protected:
 	DIP*			DI;						// DIP interface
-	Input*			Controls;
-	Console*		Out;
-	Configuration*	Cfg;
+	Input*			Controls;				// Input
+	Console*		Out;					// Console
+	Configuration*	Cfg;					// Configuration
+	Logger*			Log;					// Logger
 
+	int				NextPhase;				// Logic Step
 	bool			Standby_Flag;			// Flag is set when power button is pressed
 	bool			Reset_Flag;				// Flag is set when reset button is pressed
 	GXRModeObj*		vmode;
@@ -41,15 +49,17 @@ protected:
 	bool			IOS_Loaded;
 
 public:
-	void Initialize();					// Initializer method
-	void Run();							// Main function
+	void Run();							// Main Function
 
 private:
 	static void Standby();				// Put the console into standby
 	static void Reboot();				// Return to system menu
+	void VerifyFlags();					// Verify if the flags are set
 
+	void	Load_IOS();									// Load the IOS
+	void	Show_Menu();								// Show the Main Menu
+	void	Show_IOSMenu();								// Show the Menu for selecting IOS
 	void 	Load_Disc();								// Loads the disc
-	void	SelectIOS();								// Select the IOS
 	void	Set_VideoMode(char Region);					// Set Video Mode
 	bool	Set_GameLanguage(void *Address, int Size);	// Patch Game's Language
 

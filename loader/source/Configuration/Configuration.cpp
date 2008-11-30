@@ -53,11 +53,16 @@ Configuration::~Configuration() {}
 
 bool Configuration::CreateFolder(const char* Path)
 {
-	// Avoid errors
-	if (!Logger::Instance()->FatOk)
+	// Verify FAT
+	DIR_ITER* dir = diropen("fat:/");
+	if (dir == NULL)
+	{
+		// FAT Error (Avoid mkdir)
 		return false;
+	}
 
-	DIR_ITER* dir = diropen(Path);
+	dirclose(dir);
+	dir = diropen(Path);
 
 	if (dir == NULL)
 	{
@@ -85,10 +90,6 @@ bool Configuration::CreateFolder(const char* Path)
 
 bool Configuration::Read(const char *Path)
 {
-	// Avoid errors
-	if (!Logger::Instance()->FatOk)
-		return false;
-
 	Configuration *Parser = NULL;
 	bool Result = false;
 	byte Buffer[64];
@@ -164,10 +165,6 @@ bool Configuration::Read(const char *Path)
 
 bool Configuration::Save(const char* Path)
 {
-	// Avoid errors
-	if (!Logger::Instance()->FatOk)
-		return false;
-
 	FILE *fp;
 
 	// Open File

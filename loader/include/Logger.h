@@ -24,8 +24,8 @@
 class Logger
 {
 public:
-	void Initialize();
-	void Release();
+	void Initialize_FAT();
+	void Release_FAT();
 	void Write(const char* Filename, const char* Message, ...);
 
 	bool ShowTime;

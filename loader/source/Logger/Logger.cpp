@@ -55,7 +55,7 @@ Logger::~Logger(){}
  *
  ******************************************************************************/
 
-void Logger::Initialize()
+void Logger::Initialize_FAT()
 {
     // Mount the file system
     if (!fatInitDefault())
@@ -63,7 +63,6 @@ void Logger::Initialize()
 		FatOk = false;
         return;
     }
-
 	FatOk = true;
 }
 
@@ -75,7 +74,7 @@ void Logger::Initialize()
  *
  ******************************************************************************/
 
-void Logger::Release()
+void Logger::Release_FAT()
 {
 	// Unmount FAT
     if (!fatUnmount(PI_INTERNAL_SD)) {
@@ -85,6 +84,7 @@ void Logger::Release()
 	// Shutdown sdio
 	sdio_Startup();
 	sdio_Deinitialize();
+	FatOk = false;
 }
 
 /*******************************************************************************
@@ -97,7 +97,7 @@ void Logger::Release()
 
 void Logger::Write(const char* Filename, const char* Message, ...)
 {
-	// Avoid errors
+	// Avoid Errors
 	if (!FatOk) return;
 
     va_list argp;
@@ -109,7 +109,9 @@ void Logger::Write(const char* Filename, const char* Message, ...)
     {
         fp = fopen(Filename, "wb");
         if (fp == NULL)
+		{
 			return;
+		}
     }
 
 	// Write Time Tag

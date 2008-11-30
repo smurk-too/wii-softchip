@@ -96,7 +96,7 @@ SoftChip::SoftChip()
 	Out->PrintErr("Don't forget to change it before playing them.\n\n");
 
 	// Initialize FAT
-    Log->Initialize();
+    Log->Initialize_FAT();
 
 	// Initialize Folders
 	Cfg->CreateFolder(ConfigData::DefaultFolder);
@@ -108,6 +108,9 @@ SoftChip::SoftChip()
 		Out->Print("Using Defaults.\n");
 		Cfg->Save(ConfigData::DefaultFile); // Create
 	}
+
+	// Load IOS
+	NextPhase = Phase_IOS;
 }
 
 /*******************************************************************************
@@ -189,7 +192,7 @@ void SoftChip::Run()
 void SoftChip::Load_IOS()
 {
 	// Release FAT and Wiimotes
-	Log->Release();
+	Log->Release_FAT();
 	Controls->Terminate();
 
 	try
@@ -242,7 +245,7 @@ void SoftChip::Load_IOS()
 	Out->SetColor(Color_White, false);
 
 	// Re-Init FAT and Wiimotes
-    Log->Initialize();
+    Log->Initialize_FAT();
 	Controls->Initialize();
 }
 
@@ -578,7 +581,7 @@ void SoftChip::Load_Disc()
         DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values
 
 		// Release FAT
-		Logger::Instance()->Release();
+		Log->Release_FAT();
 
         // Cleanup loader information
         DI->Close();

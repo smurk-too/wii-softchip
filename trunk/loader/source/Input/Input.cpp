@@ -21,6 +21,7 @@
 #include <wiiuse/wpad.h>
 
 #include "Input.h"
+#include "Console.h"
 
 //--------------------------------------
 // Input Class
@@ -68,6 +69,7 @@ void Input::Initialize()
 	Exit.Active		= false;
 	Menu.Active		= false;
 	Plus.Active		= false;
+	Any.Active		= false;
 
 	Up.WPAD_Binding		= WPAD_BUTTON_UP | WPAD_CLASSIC_BUTTON_UP;
 	Up.GC_Binding		= PAD_BUTTON_UP;
@@ -149,6 +151,7 @@ void Input::Scan()
 	Activate(&Exit, (WPAD_Buttons & Exit.WPAD_Binding || GC_Buttons & Exit.GC_Binding));
 	Activate(&Menu, (WPAD_Buttons & Menu.WPAD_Binding || GC_Buttons & Menu.GC_Binding));
 	Activate(&Plus, (WPAD_Buttons & Plus.WPAD_Binding || GC_Buttons & Plus.GC_Binding));
+	Activate(&Any, (WPAD_Buttons || GC_Buttons));
 }
 
 /*******************************************************************************
@@ -159,11 +162,11 @@ void Input::Scan()
  *
  ******************************************************************************/
 
-bool Input::Wait_ButtonPress(Control *Button, int Timeout)
+bool Input::Wait_ButtonPress(Control *Button, unsigned int Timeout)
 {
 	time_t Sec = time(NULL) + Timeout;
 
-	while (time(NULL) < Sec || !Timeout)
+	while (!Timeout || time(NULL) < Sec)
 	{
 		Scan();
 
@@ -172,4 +175,18 @@ bool Input::Wait_ButtonPress(Control *Button, int Timeout)
 	}
 
 	return false;
+}
+
+/*******************************************************************************
+ * Press_AnyKey: Helper for "Press Any Key to..." 
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Input::Press_AnyKey(const char *Message)
+{
+	Console::Instance()->Print(Message);
+	Wait_ButtonPress(&Any, 0);	
 }

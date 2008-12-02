@@ -145,19 +145,54 @@ void Console::SetSilent(bool Enable)
 }
 
 /*******************************************************************************
- * StartMenu: Prepare Console for Menu
+ * Save_Cursor: Saves Console Position
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns Saved Position
+ *
+ ******************************************************************************/
+
+dword Console::Save_Cursor()
+{
+	// Save Output Length
+	return Output.length();
+}
+
+/*******************************************************************************
+ * Restore_Cursor: Restore Console Position
  * -----------------------------------------------------------------------------
  * Return Values:
  *	returns void
  *
  ******************************************************************************/
 
-void Console::StartMenu()
+void Console::Restore_Cursor(dword Position)
+{
+	// Verify
+	if (Position > Output.length());
+
+	// Restore
+	printf("\x1b[J");
+	Print(Output.substr(0, Position).c_str());
+	Output.erase(Position);
+}
+
+/*******************************************************************************
+ * CreateMenu: Prepare Console for Menu
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Console::CreateMenu()
 {
 	// Clear Previous Menu
 	ClearMenu();
 	SavedPos = false;
-	MenuStart = Output.length();
+
+	// Set Menu Position
+	MenuStart = Save_Cursor();
 }
 
 /*******************************************************************************
@@ -239,8 +274,11 @@ void Console::UpdateMenu(Input *Controls)
 	Print("\n");
 
 	// Save Position
-	printf("\x1b[s");
-	SavedPos = true;
+	if (!Silent) 
+	{
+		printf("\x1b[s");
+		SavedPos = true;
+	}
 }
 
 /*******************************************************************************

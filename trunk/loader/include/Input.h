@@ -43,13 +43,15 @@ public:
 	Control Exit;
 	Control Menu;
 	Control Plus;
+	Control Any;
 
 public:
 	void Initialize(void);
 	void Terminate();
 	void Scan();
 
-	bool Wait_ButtonPress(Control *Button, int Timeout);
+	bool Wait_ButtonPress(Control *Button, unsigned int Timeout);
+	void Press_AnyKey(const char *Message);
 
 protected:
 	void Activate(Control* Command, bool Active);

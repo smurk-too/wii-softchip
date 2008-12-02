@@ -40,13 +40,20 @@ protected:
 	Configuration*	Cfg;					// Configuration
 	Logger*			Log;					// Logger
 
+	// -- Logic
 	int				NextPhase;				// Logic Step
+	bool			Skip_AutoBoot;			// Force Menu
+	dword			Cursor_IOS;				// IOS Position in Console
+	dword			Cursor_Menu;			// Menu Position in Console
+	// -- Flags
 	bool			Standby_Flag;			// Flag is set when power button is pressed
 	bool			Reset_Flag;				// Flag is set when reset button is pressed
-	GXRModeObj*		vmode;
-	void*			framebuffer;
-	int				IOS_Version;
-	bool			IOS_Loaded;
+	// -- Video
+	GXRModeObj*		vmode;					// System Video Mode
+	void*			framebuffer;			// Framebuffer
+	// -- IOS
+	int				IOS_Version;			// Loaded IOS Version
+	bool			IOS_Loaded;				// IOS Ok?
 
 public:
 	void Run();							// Main Function

@@ -109,6 +109,10 @@ SoftChip::SoftChip()
 		Cfg->Save(ConfigData::DefaultFile); // Create
 	}
 
+	// Save IOS Position
+	Out->Print("\n");
+	Cursor_IOS = Out->Save_Cursor();
+
 	// Load IOS
 	NextPhase = Phase_IOS;
 }
@@ -144,7 +148,7 @@ void SoftChip::Run()
 		if (NextPhase == Phase_Menu)
 		{
 			// Handle Autoboot
-			if (!Cfg->Data.AutoBoot || Controls->Wait_ButtonPress(&Controls->Menu, 2))
+			if (Skip_AutoBoot || !Cfg->Data.AutoBoot || Controls->Wait_ButtonPress(&Controls->Menu, 2))
 			{
 				Show_Menu();
 			}
@@ -195,6 +199,9 @@ void SoftChip::Load_IOS()
 	Log->Release_FAT();
 	Controls->Terminate();
 
+	// Restore Console Position
+	Out->Restore_Cursor(Cursor_IOS);
+
 	try
 	{
 		// Close it or the game will hang after the second Load_IOS()
@@ -241,8 +248,9 @@ void SoftChip::Load_IOS()
 		NextPhase = Phase_SelectIOS;
 	}
 
-	// Reset Color
+	// Reset Color and Save Menu Position
 	Out->SetColor(Color_White, false);
+	Cursor_Menu = Out->Save_Cursor();
 
 	// Re-Init FAT and Wiimotes
     Log->Initialize_FAT();
@@ -259,11 +267,15 @@ void SoftChip::Load_IOS()
 
 void SoftChip::Show_Menu()
 {
+	Skip_AutoBoot = false;
 	std::string Languages[]	= { "System Default", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
 	std::string VModes[] = { "System Settings", "Disc Region" };
 	std::string BoolOption[] = { "Disabled", "Enabled" };
 
+	// Restore Menu Position
+	Out->Restore_Cursor(Cursor_Menu);
 	Out->SetSilent(false);
+
 	Out->SetColor(Color_Yellow, false);
 	Out->Print("--- Main Menu ---\n");
 	Out->Print("> The changes you make here are saved to a Default Configuration File\n");
@@ -272,7 +284,7 @@ void SoftChip::Show_Menu()
 	Out->Print("Use the D-Pad to change settings.\n\n");
 	Out->SetColor(Color_White, false);
 
-	Out->StartMenu();
+	Out->CreateMenu();
 	Console::Option *oLang = Out->CreateOption("Game's Language: ", Languages, 11, Cfg->Data.Language + 1);
 	Console::Option *oMode = Out->CreateOption("Set Video Mode using: ", VModes, 2, !Cfg->Data.SysVMode);
 	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
@@ -330,7 +342,10 @@ void SoftChip::Show_Menu()
 
 void SoftChip::Show_IOSMenu()
 {
+	// Restore Menu Position
+	Out->Restore_Cursor(Cursor_Menu);
 	Out->SetSilent(false);
+	
 	Out->SetColor(Color_Yellow, false);
 	Out->Print("--- IOS Menu ---\n");
 	Out->Print("> SoftChip will try to load the selected IOS on startup.\n");
@@ -340,7 +355,7 @@ void SoftChip::Show_IOSMenu()
 	Out->Print("Press the (A) Button to change IOS.\n\n");
 	Out->SetColor(Color_White, false);
 
-	Out->StartMenu();
+	Out->CreateMenu();
 	Console::Option *oIOS = Out->CreateOption("Use IOS: ", 0, 256, Cfg->Data.IOS);
 
 	while (true)
@@ -357,6 +372,7 @@ void SoftChip::Show_IOSMenu()
 		{
 			Cfg->Save(ConfigData::DefaultFile);
             NextPhase = Phase_IOS;
+			Skip_AutoBoot = true;
 			return;
 		}
 
@@ -611,8 +627,11 @@ void SoftChip::Load_Disc()
 		DI->Stop_Motor();
 
 		// Disable AutoBoot and return to Menu
-		Cfg->Data.AutoBoot = false;
+		Skip_AutoBoot = true;
 		NextPhase = Phase_Menu;
+
+		// Wait User
+		Controls->Press_AnyKey("Press Any Key to Continue...\n\n");
     }
 }
 

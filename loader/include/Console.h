@@ -52,26 +52,30 @@ public:
 	};
 
 protected:
-	// Buffer Related
+	// Internal
 	string	Output;		// Console Buffer
-	dword	MenuStart;	// Start Position of the Menu
 	bool	Silent;		// Silent Option
 
-	// Menu Related	
+	// Menu	
 	vector<Option*> Menu;	// Vector
 	int		iMenu;			// Menu Index
 	bool	SavedPos;		// Is the position saved?
+	dword	MenuStart;		// Menu Start Position
 
 public:
-	// Console Related
+	// Basics
 	void	Print(const char *Format, ...);		// Print Formatted
 	void	PrintErr(const char *Format, ...);	// Print Formatted (Red)
 	void	SetColor(int Color, bool Bright);	// Set Foreground Color
 	void	SetSilent(bool Enable);				// Enable or Disable Silent Option
 	void	Clear();							// Clear the Console
+
+	// Cursor
+	dword	Save_Cursor();						// Save Position
+	void	Restore_Cursor(dword Position);		// Restore Position
 	
-	// Menu Related
-	void	StartMenu();						// Prepare Console for Menu
+	// Menu
+	void	CreateMenu();						// Prepare Console for Menu
 	Option*	CreateOption(string Message, string *Options, int Max, int Value);
 	void	UpdateMenu(Input *Controls);		// Print Menu
 	void	ClearMenu();						// Clear Menu

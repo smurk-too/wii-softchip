@@ -150,10 +150,16 @@ void SoftChip::Run()
 			// Handle Autoboot
 			if (Skip_AutoBoot || !Cfg->Data.AutoBoot || Controls->Wait_ButtonPress(&Controls->Menu, 2))
 			{
+				// AutBoot Done
+				Skip_AutoBoot = true;
+
 				Show_Menu();
 			}
 			else
 			{
+				// AutBoot Done
+				Skip_AutoBoot = true;
+
 				NextPhase = Phase_Play;
 			}
 		}
@@ -267,7 +273,6 @@ void SoftChip::Load_IOS()
 
 void SoftChip::Show_Menu()
 {
-	Skip_AutoBoot = false;
 	std::string Languages[]	= { "System Default", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
 	std::string VModes[] = { "System Settings", "Disc Region" };
 	std::string BoolOption[] = { "Disabled", "Enabled" };
@@ -372,7 +377,6 @@ void SoftChip::Show_IOSMenu()
 		{
 			Cfg->Save(ConfigData::DefaultFile);
             NextPhase = Phase_IOS;
-			Skip_AutoBoot = true;
 			return;
 		}
 
@@ -626,8 +630,7 @@ void SoftChip::Load_Disc()
 		DI->Initialize();
 		DI->Stop_Motor();
 
-		// Disable AutoBoot and return to Menu
-		Skip_AutoBoot = true;
+		// Return to Menu
 		NextPhase = Phase_Menu;
 
 		// Wait User

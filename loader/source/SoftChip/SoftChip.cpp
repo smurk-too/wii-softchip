@@ -49,6 +49,7 @@ SoftChip::SoftChip()
 	Log							= Logger::Instance();
     Standby_Flag				= false;
     Reset_Flag					= false;
+	Skip_AutoBoot				= false;
     framebuffer					= 0;
     vmode						= 0;
 
@@ -150,18 +151,15 @@ void SoftChip::Run()
 			// Handle Autoboot
 			if (Skip_AutoBoot || !Cfg->Data.AutoBoot || Controls->Wait_ButtonPress(&Controls->Menu, 2))
 			{
-				// AutBoot Done
-				Skip_AutoBoot = true;
-
 				Show_Menu();
 			}
 			else
 			{
-				// AutBoot Done
-				Skip_AutoBoot = true;
-
 				NextPhase = Phase_Play;
 			}
+
+			// AutoBoot Done
+			Skip_AutoBoot = true;
 		}
 
 		if (NextPhase == Phase_SelectIOS)
@@ -204,6 +202,7 @@ void SoftChip::Load_IOS()
 	// Release FAT and Wiimotes
 	Log->Release_FAT();
 	Controls->Terminate();
+	USB_Deinitialize(); // Test
 
 	// Restore Console Position
 	Out->Restore_Cursor(Cursor_IOS);
@@ -261,6 +260,7 @@ void SoftChip::Load_IOS()
 	// Re-Init FAT and Wiimotes
     Log->Initialize_FAT();
 	Controls->Initialize();
+	USB_Deinitialize(); // Test
 }
 
 /*******************************************************************************

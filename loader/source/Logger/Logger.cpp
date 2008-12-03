@@ -58,12 +58,8 @@ Logger::~Logger(){}
 void Logger::Initialize_FAT()
 {
     // Mount the file system
-    if (!fatInitDefault())
-    {
-		FatOk = false;
-        return;
-    }
-	FatOk = true;
+	sdio_Startup();
+	FatOk = fatInitDefault();
 }
 
 /*******************************************************************************

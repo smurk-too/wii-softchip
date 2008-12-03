@@ -77,9 +77,10 @@ void Logger::Initialize_FAT()
 void Logger::Release_FAT()
 {
 	// Unmount FAT
-    /*if (!fatUnmount(PI_INTERNAL_SD)) {
+    if (!fatUnmount(PI_INTERNAL_SD)) 
+	{
         fatUnsafeUnmount(PI_INTERNAL_SD);
-    }*/
+    }
 
 	// Shutdown sdio
 	sdio_Startup();

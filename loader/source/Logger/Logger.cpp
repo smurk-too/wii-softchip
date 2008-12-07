@@ -17,12 +17,9 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <ogcsys.h>
 
 #include "Logger.h"
-
-extern "C" bool sdio_Startup(void);
-extern "C" bool sdio_Deinitialize(void);
+#include "Configuration.h"
 
 //--------------------------------------
 // Logger Class
@@ -48,40 +45,31 @@ Logger::Logger() {}
 Logger::~Logger(){}
 
 /*******************************************************************************
- * Initialize: Init Fat System
+ * OpenLog: Set Log File
  * -----------------------------------------------------------------------------
  * Return Values:
- *	returns void
+ *	returns bool
  *
  ******************************************************************************/
 
-void Logger::Initialize_FAT()
+bool Logger::OpenLog(const char* Filename)
 {
-    // Mount the file system
-	sdio_Startup();
-	FatOk = fatInitDefault();
-}
+	// Logging Activated?
+	if (!Configuration::Instance()->Data.Logging) return false;
 
-/*******************************************************************************
- * Release: Unmount SD
- * -----------------------------------------------------------------------------
- * Return Values:
- *	returns void
- *
- ******************************************************************************/
+	// Close Previous
+	if (LogFile) fclose(LogFile);
 
-void Logger::Release_FAT()
-{
-	// Unmount FAT
-    if (!fatUnmount(PI_INTERNAL_SD)) 
-	{
-        fatUnsafeUnmount(PI_INTERNAL_SD);
+    // Verify File
+	LogFile = Storage::Instance()->OpenFile(Filename, "ab");
+    if (LogFile == NULL)
+    {
+        LogFile = Storage::Instance()->OpenFile(Filename, "wb");
+        if (LogFile == NULL) return false;
     }
 
-	// Shutdown sdio
-	sdio_Startup();
-	sdio_Deinitialize();
-	FatOk = false;
+	// Ok
+	return true;
 }
 
 /*******************************************************************************
@@ -92,24 +80,10 @@ void Logger::Release_FAT()
  *
  ******************************************************************************/
 
-void Logger::Write(const char* Filename, const char* Message, ...)
+void Logger::Write(const char* Message, ...)
 {
-	// Avoid Errors
-	if (!FatOk) return;
-
-    va_list argp;
-    FILE *fp;
-
-    // Open existing file
-    fp = fopen(Filename, "ab");
-    if (fp == NULL)
-    {
-        fp = fopen(Filename, "wb");
-        if (fp == NULL)
-		{
-			return;
-		}
-    }
+	// Verify File
+	if (LogFile == NULL) return;
 
 	// Write Time Tag
 	if (ShowTime)
@@ -120,14 +94,12 @@ void Logger::Write(const char* Filename, const char* Message, ...)
 		time(&NowTime);
 		localtime_r(&NowTime, &FTime);
 
-		fprintf(fp, "[%02d/%02d %02d:%02d:%02d] ", FTime.tm_mday, FTime.tm_mon, FTime.tm_hour, FTime.tm_min, FTime.tm_sec);
+		fprintf(LogFile, "[%02d/%02d %02d:%02d:%02d] ", FTime.tm_mday, FTime.tm_mon, FTime.tm_hour, FTime.tm_min, FTime.tm_sec);
 	}
 
-	// Write the formatted message    
+	// Write the formatted message  
+	va_list argp;
     va_start(argp, Message);
-    vfprintf(fp, Message, argp);
+    vfprintf(LogFile, Message, argp);
     va_end(argp);
-
-    // Cleanup
-    fclose(fp);
 }

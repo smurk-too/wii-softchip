@@ -20,6 +20,7 @@
 #include "DIP.h"
 #include "Input.h"
 #include "Console.h"
+#include "Storage.h"
 #include "Configuration.h"
 #include "Logger.h"
 
@@ -39,6 +40,7 @@ protected:
 	Console*		Out;					// Console
 	Configuration*	Cfg;					// Configuration
 	Logger*			Log;					// Logger
+	Storage*		SD;						// Storage
 
 	// -- Logic
 	int				NextPhase;				// Logic Step

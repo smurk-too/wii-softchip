@@ -8,7 +8,7 @@
  *
  * Description:
  * -----------
- *	Contains definition of a class  to handle console output
+ *	Contains definition of a class to handle console output
  *
  ******************************************************************************/
 

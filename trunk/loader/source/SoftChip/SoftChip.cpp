@@ -516,6 +516,15 @@ void SoftChip::Load_Disc()
 		Out->Print("[+] Partition opened successfully.\n");
 		Out->Print("IOS requested by the game: %u\n", Tmd_Buffer[0x18b]);
 
+
+		if (Cfg->Data.Logging) // Write game info into the log
+		{
+			Log->Write("/SoftChip/Default.log", "Disc Title: %s\r\n", Header.Title);
+			Log->Write("/SoftChip/Default.log", "Disc ID: %s\r\n", Disc_ID);
+			Log->Write("/SoftChip/Default.log", "IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
+			Log->Write("/SoftChip/Default.log", "\r\n");
+		}
+
         // Read apploader header from 0x2440
 
         static Apploader::Header Loader __attribute__((aligned(0x20)));

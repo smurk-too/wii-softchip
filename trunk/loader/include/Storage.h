@@ -1,14 +1,14 @@
 /*******************************************************************************
- * Logger.h
+ * Storage.h
  *
- * Copyright (c) 2008 Requiem (requiem@century-os.com)
+ * Copyright (c) 2008 SoftChip Team
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
  *
  * Description:
  * -----------
- *	Contains definition of a class to log program output
+ *	Contains definition of a class to handle storage (FAT)
  *
  ******************************************************************************/
 
@@ -17,33 +17,34 @@
 //--------------------------------------
 // Includes
 
-#include "Storage.h"
+#include <fat.h>
+#include <sys/dir.h>
 
 //--------------------------------------
-// Logger Class
+// Storage Class
 
-class Logger
+class Storage
 {
 public:
-	bool OpenLog(const char* Filename);
-	void Write(const char* Message, ...);
+	void Initialize_FAT();
+	void Release_FAT();
 
-	bool ShowTime;
+	FILE *OpenFile(const char *Path, const char *Mode);
+	bool MakeDir(const char *Path);
 
 protected:
-	FILE *LogFile;
+	bool FatOk;
 
-	Logger();
-	Logger(const Logger&);
-	Logger& operator= (const Logger&);
+	Storage();
+	Storage(const Storage&);
+	Storage& operator= (const Storage&);
 
-	virtual ~Logger();
+	virtual ~Storage();
 
 public:
-	inline static Logger* Instance()
+	inline static Storage* Instance()
 	{
-		static Logger instance;
+		static Storage instance;
 		return &instance;
 	}
 };
-

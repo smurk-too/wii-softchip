@@ -18,9 +18,9 @@
 // Includes
 
 #include <stdio.h>
-#include <sys/dir.h>
 
 #include "Memory_Map.h"
+#include "Storage.h"
 
 #define Default_IOS 36
 
@@ -31,8 +31,9 @@ namespace ConfigData
 {
 	const byte LastVersion = 2;
 	const char Signature[] = "B5662343D78AD6D";
-	const char DefaultFolder[] = "/SoftChip";
-	const char DefaultFile[] = "/SoftChip/Default.cfg";
+	const char SoftChip_Folder[] = "/SoftChip";
+	const char Default_ConfigFile[] = "/SoftChip/Default.cfg";
+	const char Default_LogFile[] = "/SoftChip/Default.log";
 
 	struct Ver2
 	{
@@ -59,7 +60,6 @@ namespace ConfigData
 class Configuration
 {
 public:
-	bool CreateFolder(const char* Path);
 	bool Read(const char* Path);
 	bool Save(const char* Path);
 

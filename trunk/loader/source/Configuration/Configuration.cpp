@@ -15,10 +15,9 @@
 //--------------------------------------
 // Includes
 
-#include <string.h>
+#include <string>
 
 #include "Configuration.h"
-#include "Logger.h"
 
 //--------------------------------------
 // Configuration Class
@@ -44,43 +43,6 @@ Configuration::Configuration() {}
 Configuration::~Configuration() {}
 
 /*******************************************************************************
- * CreateFolder: Create a folder
- * -----------------------------------------------------------------------------
- * Return Values:
- *	returns true if created
- *
- ******************************************************************************/
-
-bool Configuration::CreateFolder(const char* Path)
-{
-	// Verify FAT
-	DIR_ITER* dir = diropen("fat:/");
-	if (dir == NULL)
-	{
-		// FAT Error (Avoid mkdir)
-		return false;
-	}
-
-	dirclose(dir);
-	dir = diropen(Path);
-
-	if (dir == NULL)
-	{
-		// Create
-		mode_t mode = 0777;
-		mkdir(Path, mode);
-
-		// Verify
-		dirclose(dir);
-		dir = diropen(Path);
-		if (dir == NULL) return false;
-	}
-
-	dirclose(dir);
-	return true;
-}
-
-/*******************************************************************************
  * Read: Read a Config File
  * -----------------------------------------------------------------------------
  * Return Values:
@@ -98,7 +60,7 @@ bool Configuration::Read(const char *Path)
 	try
 	{
 		// Open File
-		fp = fopen(Path, "rb");
+		fp = Storage::Instance()->OpenFile(Path, "rb");
 		if (fp == NULL)
 		{
 			throw "Open Error";
@@ -165,10 +127,8 @@ bool Configuration::Read(const char *Path)
 
 bool Configuration::Save(const char* Path)
 {
-	FILE *fp;
-
 	// Open File
-    fp = fopen(Path, "wb");
+    FILE *fp = Storage::Instance()->OpenFile(Path, "wb");
     if (fp == NULL)
     {
         return false;

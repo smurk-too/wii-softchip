@@ -42,16 +42,23 @@ extern "C" void settime(u64 time);
 
 SoftChip::SoftChip()
 {
-    DI							= DIP::Instance();
-    Controls					= Input::Instance();
-	Out							= Console::Instance();
-	Cfg							= Configuration::Instance();
-	Log							= Logger::Instance();
-    Standby_Flag				= false;
-    Reset_Flag					= false;
-	Skip_AutoBoot				= false;
-    framebuffer					= 0;
-    vmode						= 0;
+	// Classes
+    DI						= DIP::Instance();
+    Controls				= Input::Instance();
+	Out						= Console::Instance();
+	Cfg						= Configuration::Instance();
+	Log						= Logger::Instance();
+	SD						= Storage::Instance();
+
+	// Flags
+    Standby_Flag			= false;
+    Reset_Flag				= false;
+	Skip_AutoBoot			= false;
+	Log->ShowTime			= true;
+
+	// Video
+    framebuffer				= 0;
+    vmode					= 0;
 
     // Initialize subsystems
     VIDEO_Init();
@@ -97,21 +104,24 @@ SoftChip::SoftChip()
 	Out->PrintErr("Don't forget to change it before playing them.\n\n");
 
 	// Initialize FAT
-    Log->Initialize_FAT();
+	SD->Initialize_FAT();
 
-	// Initialize Folders
-	Cfg->CreateFolder(ConfigData::DefaultFolder);
+	// Verify SoftChip Folder
+	SD->MakeDir(ConfigData::SoftChip_Folder);
 
 	// Initialize Configuration	
 	Out->Print("Reading Configuration File...\n");
-	if (!Cfg->Read(ConfigData::DefaultFile))
+	if (!Cfg->Read(ConfigData::Default_ConfigFile))
 	{
-		Out->Print("Using Defaults.\n");
-		Cfg->Save(ConfigData::DefaultFile); // Create
+		Out->Print("Using Defaults.\n\n");
+		Cfg->Save(ConfigData::Default_ConfigFile);
+	}
+	else
+	{
+		Out->Print("Configuration Loaded.\n\n");
 	}
 
 	// Save IOS Position
-	Out->Print("\n");
 	Cursor_IOS = Out->Save_Cursor();
 
 	// Load IOS
@@ -174,12 +184,9 @@ void SoftChip::Run()
 			Out->SetSilent(Cfg->Data.Silent);
 
 			// Initialize Default Logger
-			if (Cfg->Data.Logging)
-			{
-				Log->ShowTime = true;
-				Log->Write("/SoftChip/Default.log",  "SoftChip Started\r\n");
-				Log->Write("/SoftChip/Default.log",  "Loading Disc...\r\n");
-			}
+			Log->OpenLog(ConfigData::Default_LogFile);
+			Log->Write("---------------------\r\n");
+			Log->Write("Loading Disc...\r\n");
 
 			// Run Game
 			Load_Disc();
@@ -200,9 +207,8 @@ void SoftChip::Run()
 void SoftChip::Load_IOS()
 {
 	// Release FAT and Wiimotes
-	Log->Release_FAT();
+	SD->Release_FAT();
 	Controls->Terminate();
-	USB_Deinitialize(); // Test
 
 	// Restore Console Position
 	Out->Restore_Cursor(Cursor_IOS);
@@ -258,9 +264,8 @@ void SoftChip::Load_IOS()
 	Cursor_Menu = Out->Save_Cursor();
 
 	// Re-Init FAT and Wiimotes
-    Log->Initialize_FAT();
+	SD->Initialize_FAT();
 	Controls->Initialize();
-	USB_Deinitialize(); // Test
 }
 
 /*******************************************************************************
@@ -305,14 +310,14 @@ void SoftChip::Show_Menu()
         if (Controls->Exit.Active)
 		{
 			Out->Print("Returning...\n");
-			Cfg->Save(ConfigData::DefaultFile);
+			Cfg->Save(ConfigData::Default_ConfigFile);
             exit(0);
 		}
 
 		// Run Game
         if (Controls->Accept.Active)
         {
-			Cfg->Save(ConfigData::DefaultFile);
+			Cfg->Save(ConfigData::Default_ConfigFile);
             NextPhase = Phase_Play;
 			return;
         }
@@ -375,7 +380,7 @@ void SoftChip::Show_IOSMenu()
 		// Load IOS
 		if (Controls->Accept.Active)
 		{
-			Cfg->Save(ConfigData::DefaultFile);
+			Cfg->Save(ConfigData::Default_ConfigFile);
             NextPhase = Phase_IOS;
 			return;
 		}
@@ -428,6 +433,10 @@ void SoftChip::Load_Disc()
         Out->Print("Disc ID: %s\n", Disc_ID);
         Out->Print("Magic Number: 0x%x\n", Header.Magic);
         Out->Print("Disc Title: %s\n", Header.Title);
+		
+		// Log
+		Log->Write("Disc ID: %s\r\n", Disc_ID);
+		Log->Write("Disc Title: %s\r\n", Header.Title);
 
         // Read partition descriptor and get offset to partition info
         dword Offset = Wii_Disc::Offsets::Descriptor;
@@ -515,15 +524,7 @@ void SoftChip::Load_Disc()
 
 		Out->Print("[+] Partition opened successfully.\n");
 		Out->Print("IOS requested by the game: %u\n", Tmd_Buffer[0x18b]);
-
-
-		if (Cfg->Data.Logging) // Write game info into the log
-		{
-			Log->Write("/SoftChip/Default.log", "Disc Title: %s\r\n", Header.Title);
-			Log->Write("/SoftChip/Default.log", "Disc ID: %s\r\n", Disc_ID);
-			Log->Write("/SoftChip/Default.log", "IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
-			Log->Write("/SoftChip/Default.log", "\r\n");
-		}
+		Log->Write("IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
 
         // Read apploader header from 0x2440
 
@@ -610,7 +611,7 @@ void SoftChip::Load_Disc()
         DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values
 
 		// Release FAT
-		Log->Release_FAT();
+		SD->Release_FAT();
 
         // Cleanup loader information
         DI->Close();
@@ -633,6 +634,7 @@ void SoftChip::Load_Disc()
     catch (const char* Message)
     {
         Out->PrintErr("Exception: %s\n\n", Message);
+		Log->Write("Exception: %s\r\n", Message);
 
 		// Prepare Drive for loading again (Is there a better way?)
 		DI->Close();

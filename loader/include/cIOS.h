@@ -21,13 +21,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
+#include <algorithm>
+#include <vector>
 #include <malloc.h>
-#include <ogcsys.h>
 #include <gccore.h>
+
+using namespace std;
 
 #define TITLEID(x)	(0x100000000ULL | x)
 #define CERTS_SIZE	0xA00
+#define MAX_TITLES	256
 
 //--------------------------------------
 // cIOS Class
@@ -38,6 +42,9 @@ public:
 	s32 Load(u32 Version);
 	s32 Version();
 	s32 Identify();
+	s32 List_SysTitles();
+
+	vector<u32> SysTitles;
 
 protected:
 	inline cIOS(){}

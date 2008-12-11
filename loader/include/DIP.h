@@ -35,6 +35,7 @@ public:
 	int	Read_DiscID(unsigned long long* Disc_ID);
 	int Read(void* Buffer, unsigned int size, unsigned int offset);
 	int	Wait_CoverClose();
+	int Verify_Cover(bool *Inserted);
 	int Reset();
 	int Read_Unencrypted(void* Buffer, unsigned int size, unsigned int offset);
 	int Enable_DVD();

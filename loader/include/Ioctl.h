@@ -38,6 +38,7 @@ namespace Ioctl
 		DI_ReadDVD				= 0xd0,
 		DI_StopLaser			= 0xd2,
 		DI_Offset				= 0xd9,
+		DI_VerifyCover			= 0xdb,
 		DI_RequestError			= 0xe0,
 		DI_StopMotor			= 0xe3,
 		DI_Streaming			= 0xe4,

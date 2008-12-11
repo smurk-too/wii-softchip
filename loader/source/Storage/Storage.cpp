@@ -16,8 +16,6 @@
 // Includes
 
 #include <stdio.h>
-#include <stdarg.h>
-#include <ogcsys.h>
 
 #include "Storage.h"
 
@@ -72,15 +70,12 @@ void Storage::Initialize_FAT()
 void Storage::Release_FAT()
 {
 	// Unmount FAT
-    if (!fatUnmount(PI_INTERNAL_SD)) 
-	{
-        fatUnsafeUnmount(PI_INTERNAL_SD);
-    }
-
+	fatUnmount("sd");
+	FatOk = false;
+	
 	// Shutdown sdio
 	sdio_Startup();
 	sdio_Deinitialize();
-	FatOk = false;
 }
 
 /*******************************************************************************
@@ -114,7 +109,7 @@ bool Storage::MakeDir(const char *Path)
 	if (!FatOk) return false;
 
 	// Verify FAT
-	DIR_ITER* dir = diropen("fat:/");
+	DIR* dir = opendir("/");
 	if (dir == NULL)
 	{
 		// FAT Error (Avoid mkdir)
@@ -122,8 +117,8 @@ bool Storage::MakeDir(const char *Path)
 	}
 
 	// Open Target Folder
-	dirclose(dir);
-	dir = diropen(Path);
+	closedir(dir);
+	dir = opendir(Path);
 
 	// Already Exists?
 	if (dir == NULL)
@@ -133,12 +128,12 @@ bool Storage::MakeDir(const char *Path)
 		mkdir(Path, Mode);
 
 		// Re-Verify
-		dirclose(dir);
-		dir = diropen(Path);
+		closedir(dir);
+		dir = opendir(Path);
 		if (dir == NULL) return false;
 	}
 
 	// Success
-	dirclose(dir);
+	closedir(dir);
 	return true;
 }

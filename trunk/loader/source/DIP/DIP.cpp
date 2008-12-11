@@ -229,6 +229,30 @@ int DIP::Wait_CoverClose()
 }
 
 /*******************************************************************************
+ * Verify_Cover: Verify if a disc is inserted
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns result of Ioctl command
+ *
+ ******************************************************************************/
+
+int DIP::Verify_Cover(bool *Inserted)
+{
+	Lock();
+
+	memset(Command, 0, 0x20);
+	Command[0] = Ioctl::DI_VerifyCover << 24;
+
+	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_VerifyCover, Command, 0x20, Output, 0x20);
+	if (Ret == 2) throw "Ioctl error (DI_VerifyCover)";
+	if (Ret == 1) *Inserted = !((bool)*Output);
+
+	Unlock();
+
+	return ((Ret == 1) ? 0 : -Ret);
+}
+
+/*******************************************************************************
  * Reset: Resets the drive's hardware
  * -----------------------------------------------------------------------------
  * Return Values:

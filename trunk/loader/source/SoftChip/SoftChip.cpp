@@ -352,6 +352,38 @@ void SoftChip::Show_Menu()
 
 void SoftChip::Show_IOSMenu()
 {
+	dword i, Count = 0;
+	dword Cfg_IOS = 0;
+
+	// Get a list of Valid IOSes
+	cIOS *IOS = cIOS::Instance();
+	IOS->List_SysTitles();
+
+	// Declare Lists
+	string List[IOS->SysTitles.size()];
+	char nList[IOS->SysTitles.size()];
+
+	// Fill the List
+	for (i = 0; i < IOS->SysTitles.size(); i++)
+	{
+		switch (IOS->SysTitles[i])
+		{
+			case 1:		// BOOT2
+			case 2:		// System Menu
+			case 0x100:	// BC
+			case 0x101:	// MIOS
+				break;
+
+			default:	// Valid IOS
+				char Buffer[32];
+				sprintf(Buffer, "IOS%u", IOS->SysTitles[i]);
+
+				if (IOS->SysTitles[i] == Cfg->Data.IOS) Cfg_IOS = Count;
+				nList[Count] = IOS->SysTitles[i];
+				List[Count++] = string(Buffer);
+		}
+	}
+
 	// Restore Menu Position
 	Out->Restore_Cursor(Cursor_Menu);
 	Out->SetSilent(false);
@@ -366,7 +398,7 @@ void SoftChip::Show_IOSMenu()
 	Out->SetColor(Color_White, false);
 
 	Out->CreateMenu();
-	Console::Option *oIOS = Out->CreateOption("Use IOS: ", 0, 256, Cfg->Data.IOS);
+	Console::Option *oIOS = Out->CreateOption("SoftChip will use: ", List, Count, Cfg_IOS);
 
 	while (true)
 	{
@@ -387,7 +419,7 @@ void SoftChip::Show_IOSMenu()
 
 		// Update Menu
 		Out->UpdateMenu(Controls);
-		Cfg->Data.IOS = oIOS->Index;
+		Cfg->Data.IOS = nList[oIOS->Index];
 
 		VerifyFlags();
         VIDEO_WaitVSync();
@@ -414,11 +446,19 @@ void SoftChip::Load_Disc()
 
 	// Set Clock
 	settime(secs_to_ticks(time(NULL) - 946684800));
-	Out->Print("Loading Game...\n");
 
     try
     {
-        DI->Wait_CoverClose();
+		bool Disc_Inserted = false;
+		DI->Verify_Cover(&Disc_Inserted);
+
+		if (!Disc_Inserted)
+		{
+			Out->Print("Please insert a Disc.\n");
+			DI->Wait_CoverClose();
+		}
+
+		Out->Print("Loading Game...\n");
         DI->Reset();
 
         memset(reinterpret_cast<void*>(Memory::Disc_ID), 0, 6);

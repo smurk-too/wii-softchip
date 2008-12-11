@@ -191,3 +191,46 @@ s32	cIOS::GenerateTicket(signed_blob** Output, u32* Length)
 	return 0;
 }
 
+/*******************************************************************************
+ * List_IOS: Fill a buffer with the list of IOS
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns < 0 (Error) or 0 (Success)
+ *
+ ******************************************************************************/
+
+s32 cIOS::List_SysTitles()
+{
+	static u64 Titles[MAX_TITLES] ATTRIBUTE_ALIGN(32);
+	u32 Count = 0, i;
+
+	// Get Count
+	s32 Result = ES_GetNumTitles(&Count);
+
+	// Verify
+	if (Result < 0) return Result;
+	if (Result > MAX_TITLES) return -1;
+
+	// Get Data
+	Result = ES_GetTitles(Titles, Count);
+	if (Result < 0) return Result;
+
+	// Clear SysTitles
+	SysTitles.clear();
+
+	for (i = 0; i < Count; i++)
+	{
+		// Look for System Titles (Type == 1)
+		if (Titles[i] >> 32 == 1)
+		{
+			// Get Title
+			SysTitles.push_back((u32)(Titles[i] & 0xFFFFFFFF));
+		}
+	}
+
+	// Sort
+	sort(SysTitles.begin(), SysTitles.end());
+
+	// Success
+	return 0;
+}

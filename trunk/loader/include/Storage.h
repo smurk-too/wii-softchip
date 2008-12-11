@@ -18,7 +18,7 @@
 // Includes
 
 #include <fat.h>
-#include <sys/dir.h>
+#include <dirent.h>
 
 //--------------------------------------
 // Storage Class

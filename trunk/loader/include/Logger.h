@@ -26,6 +26,7 @@ class Logger
 {
 public:
 	bool OpenLog(const char* Filename);
+	void CloseLog();
 	void Write(const char* Message, ...);
 
 	bool ShowTime;

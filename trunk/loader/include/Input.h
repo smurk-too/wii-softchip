@@ -43,6 +43,7 @@ public:
 	Control Exit;
 	Control Menu;
 	Control Plus;
+	Control Minus;
 	Control Any;
 
 public:

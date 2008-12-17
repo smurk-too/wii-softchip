@@ -405,10 +405,6 @@ void SoftChip::Show_IOSMenu()
 		// Update Input
 		Controls->Scan();
 
-		// Faster Selecting
-		if (Controls->Up.Active) oIOS->Index += 20;
-		if (Controls->Down.Active) oIOS->Index -= 20;
-
 		// Load IOS
 		if (Controls->Accept.Active)
 		{
@@ -650,6 +646,9 @@ void SoftChip::Load_Disc()
         // Flush application memory range
         DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values
 
+		// Close the logfile
+		Log->CloseLog();
+		
 		// Release FAT
 		SD->Release_FAT();
 

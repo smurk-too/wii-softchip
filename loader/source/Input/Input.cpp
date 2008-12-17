@@ -69,6 +69,7 @@ void Input::Initialize()
 	Exit.Active		= false;
 	Menu.Active		= false;
 	Plus.Active		= false;
+	Minus.Active	= false;
 	Any.Active		= false;
 
 	Up.WPAD_Binding		= WPAD_BUTTON_UP | WPAD_CLASSIC_BUTTON_UP;
@@ -97,6 +98,9 @@ void Input::Initialize()
 
 	Plus.WPAD_Binding	= WPAD_BUTTON_PLUS | WPAD_CLASSIC_BUTTON_PLUS;
 	Plus.GC_Binding		= PAD_BUTTON_X;
+
+	Minus.WPAD_Binding	= WPAD_BUTTON_MINUS | WPAD_CLASSIC_BUTTON_MINUS;
+	Minus.GC_Binding	= PAD_BUTTON_Y;
 }
 
 /*******************************************************************************
@@ -151,6 +155,7 @@ void Input::Scan()
 	Activate(&Exit, (WPAD_Buttons & Exit.WPAD_Binding || GC_Buttons & Exit.GC_Binding));
 	Activate(&Menu, (WPAD_Buttons & Menu.WPAD_Binding || GC_Buttons & Menu.GC_Binding));
 	Activate(&Plus, (WPAD_Buttons & Plus.WPAD_Binding || GC_Buttons & Plus.GC_Binding));
+	Activate(&Minus, (WPAD_Buttons & Minus.WPAD_Binding || GC_Buttons & Minus.GC_Binding));
 	Activate(&Any, (WPAD_Buttons || GC_Buttons));
 }
 

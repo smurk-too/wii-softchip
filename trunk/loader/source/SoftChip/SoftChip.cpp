@@ -55,6 +55,7 @@ SoftChip::SoftChip()
     Reset_Flag				= false;
 	Skip_AutoBoot			= false;
 	Log->ShowTime			= true;
+	Remove_002				= false;
 
 	// Video
     framebuffer				= 0;
@@ -300,6 +301,7 @@ void SoftChip::Show_Menu()
 	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
 	Console::Option *oSlnt = Out->CreateOption("Silent: ", BoolOption, 2, Cfg->Data.Silent);
 	Console::Option *oLogg = Out->CreateOption("Logging: ", BoolOption, 2, Cfg->Data.Logging);
+	Console::Option *o002  = Out->CreateOption("002 fix: ", BoolOption, 2, Remove_002);
 
     while (true)
     {
@@ -336,7 +338,8 @@ void SoftChip::Show_Menu()
 		Cfg->Data.AutoBoot = oBoot->Index;
 		Cfg->Data.Silent = oSlnt->Index;
 		Cfg->Data.Logging = oLogg->Index;
-
+		Remove_002 = o002->Index;
+		
 		VerifyFlags();
         VIDEO_WaitVSync();
     }
@@ -610,6 +613,7 @@ void SoftChip::Load_Disc()
         int		Section_Size;
         int		Partition_Offset;
 		bool	Lang_Patched = (Cfg->Data.Language == -1);
+		bool	Removed_002 = (!Remove_002);
 
         Out->Print("Loading.\t\t\n");
         while(Load(&Address, &Section_Size, &Partition_Offset))
@@ -622,7 +626,7 @@ void SoftChip::Load_Disc()
             DCFlushRange(Address, Section_Size);
             // NOTE: This would be the ideal time to patch main.dol
 			if (!Lang_Patched) Lang_Patched = Set_GameLanguage(Address, Section_Size);
-
+			if (!Removed_002) Removed_002 = Remove_002_Protection(Address, Section_Size);
         }
 
         // Patch in info missing from apploader reads
@@ -780,6 +784,39 @@ bool SoftChip::Set_GameLanguage(void *Address, int Size)
 		else if (Addr[0] == PatchData[0] && Addr[1] == PatchData[1] && Addr[2] == PatchData[2])
 		{
 			SearchTarget = true;
+		}
+
+		Addr += 1;
+		Size -= 4;
+	}
+
+	return false;
+}
+
+/*******************************************************************************
+ * Remove_002_protection: Removes the 002 copy protection
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns true if patched
+ *
+ ******************************************************************************/
+
+bool SoftChip::Remove_002_Protection(void *Address, int Size)
+{
+	unsigned int SearchPattern[3]	= { 0x2C000000, 0x40820214, 0x3C608000 };
+	unsigned int PatchData[3]		= { 0x2C000000, 0x48000214, 0x3C608000 };
+	unsigned int *Addr				= (unsigned int*)Address;
+
+	while (Size >= 12)
+	{
+		if (Addr[0] == SearchPattern[0] && Addr[1] == SearchPattern[1] && Addr[2] == SearchPattern[2])
+		{
+			*Addr = PatchData[0];
+			Addr += 1;
+			*Addr = PatchData[1];
+			Addr += 1;
+			*Addr = PatchData[2];
+			return true;
 		}
 
 		Addr += 1;

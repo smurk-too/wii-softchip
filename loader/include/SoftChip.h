@@ -56,6 +56,8 @@ protected:
 	// -- IOS
 	int				IOS_Version;			// Loaded IOS Version
 	bool			IOS_Loaded;				// IOS Ok?
+	
+	bool			Remove_002;	
 
 public:
 	void Run();							// Main Function
@@ -65,12 +67,13 @@ private:
 	static void Reboot();				// Return to system menu
 	void VerifyFlags();					// Verify if the flags are set
 
-	void	Load_IOS();									// Load the IOS
-	void	Show_Menu();								// Show the Main Menu
-	void	Show_IOSMenu();								// Show the Menu for selecting IOS
-	void 	Load_Disc();								// Loads the disc
-	void	Set_VideoMode(char Region);					// Set Video Mode
-	bool	Set_GameLanguage(void *Address, int Size);	// Patch Game's Language
+	void	Load_IOS();										// Load the IOS
+	void	Show_Menu();									// Show the Main Menu
+	void	Show_IOSMenu();									// Show the Menu for selecting IOS
+	void 	Load_Disc();									// Loads the disc
+	void	Set_VideoMode(char Region);						// Set Video Mode
+	bool	Set_GameLanguage(void *Address, int Size);		// Patch Game's Language
+	bool	Remove_002_Protection(void *Address, int Size);	// Remove the 002 protection
 
 protected:
 	SoftChip();

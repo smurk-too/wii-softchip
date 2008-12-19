@@ -81,6 +81,10 @@ bool Configuration::Read(const char *Path)
 		// Get File Version		
 		switch (Buffer[15]) 
 		{
+			case 3:		// Version 3
+				Parser = new ConfigVer3();
+				break;
+
 			case 2:		// Version 2
 				Parser = new ConfigVer2();
 				break;
@@ -162,16 +166,35 @@ bool Configuration::Parse(FILE *fp)	// Default Settings
 	Data.AutoBoot = false;
 	Data.Silent = false;
 	Data.Logging = false;
+	Data.Remove_002 = false;
 	return true;
 }
 
-bool ConfigVer2::Parse(FILE *fp)	// Ver2 Settings
+bool ConfigVer3::Parse(FILE *fp)	// Ver3 Settings
 {
 	// Get File Data
 	if (fread(&Data, 1, sizeof(Data), fp) != sizeof(Data))
 		return false;
 	else
 		return true;
+}
+
+bool ConfigVer2::Parse(FILE *fp)	// Ver2 Settings
+{
+	// Get File Data
+	ConfigData::Ver2 Temp;
+	if (fread(&Temp, 1, sizeof(Temp), fp) != sizeof(Temp))
+		return false;
+
+	// Convert
+	Configuration::Parse(0);
+	Data.IOS = Temp.IOS;
+	Data.Language = Temp.Language;
+	Data.AutoBoot = Temp.AutoBoot;
+	Data.SysVMode = Temp.SysVMode;
+	Data.Silent = Temp.Silent;
+	Data.Logging = Temp.Logging;
+	return true;
 }
 
 bool ConfigVer1::Parse(FILE *fp)	// Ver1 Settings

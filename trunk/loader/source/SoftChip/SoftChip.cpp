@@ -55,7 +55,6 @@ SoftChip::SoftChip()
     Reset_Flag				= false;
 	Skip_AutoBoot			= false;
 	Log->ShowTime			= true;
-	Remove_002				= false;
 
 	// Video
     framebuffer				= 0;
@@ -301,7 +300,7 @@ void SoftChip::Show_Menu()
 	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
 	Console::Option *oSlnt = Out->CreateOption("Silent: ", BoolOption, 2, Cfg->Data.Silent);
 	Console::Option *oLogg = Out->CreateOption("Logging: ", BoolOption, 2, Cfg->Data.Logging);
-	Console::Option *o002  = Out->CreateOption("002 fix: ", BoolOption, 2, Remove_002);
+	Console::Option *o002  = Out->CreateOption("Remove 002 Protection: ", BoolOption, 2, Cfg->Data.Remove_002);
 
     while (true)
     {
@@ -338,7 +337,7 @@ void SoftChip::Show_Menu()
 		Cfg->Data.AutoBoot = oBoot->Index;
 		Cfg->Data.Silent = oSlnt->Index;
 		Cfg->Data.Logging = oLogg->Index;
-		Remove_002 = o002->Index;
+		Cfg->Data.Remove_002 = o002->Index;
 		
 		VerifyFlags();
         VIDEO_WaitVSync();
@@ -613,7 +612,7 @@ void SoftChip::Load_Disc()
         int		Section_Size;
         int		Partition_Offset;
 		bool	Lang_Patched = (Cfg->Data.Language == -1);
-		bool	Removed_002 = (!Remove_002);
+		bool	Removed_002 = (!Cfg->Data.Remove_002);
 
         Out->Print("Loading.\t\t\n");
         while(Load(&Address, &Section_Size, &Partition_Offset))

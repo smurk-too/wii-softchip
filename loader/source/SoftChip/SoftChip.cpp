@@ -233,7 +233,7 @@ void SoftChip::Load_IOS()
 		if (IOS_Loaded)
 		{
 			Out->SetColor(Color_Green, true);
-			Out->Print("[+] IOS %d Loaded\n\n", IOS_Version);
+			Out->Print("[+] IOS %d (revision %d) Loaded\n\n", IOS_Version, IOS_GetRevision());
 		}
 		else
 		{

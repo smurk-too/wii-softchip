@@ -55,9 +55,7 @@ protected:
 	void*			framebuffer;			// Framebuffer
 	// -- IOS
 	int				IOS_Version;			// Loaded IOS Version
-	bool			IOS_Loaded;				// IOS Ok?
-	
-	bool			Remove_002;	
+	bool			IOS_Loaded;				// IOS Ok?	
 
 public:
 	void Run();							// Main Function
@@ -66,6 +64,7 @@ private:
 	static void Standby();				// Put the console into standby
 	static void Reboot();				// Return to system menu
 	void VerifyFlags();					// Verify if the flags are set
+	void Exit_Loader();					// Return to Loader or System Menu
 
 	void	Load_IOS();										// Load the IOS
 	void	Show_Menu();									// Show the Main Menu

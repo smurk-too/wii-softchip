@@ -193,7 +193,7 @@ void SoftChip::Run()
 		}
 	}
 
-	exit(0);
+	Exit_Loader();
 }
 
 /*******************************************************************************
@@ -233,7 +233,7 @@ void SoftChip::Load_IOS()
 		if (IOS_Loaded)
 		{
 			Out->SetColor(Color_Green, true);
-			Out->Print("[+] IOS %d (revision %d) Loaded\n\n", IOS_Version, IOS_GetRevision());
+			Out->Print("[+] IOS %d (Revision %d) Loaded\n\n", IOS_Version, IOS_GetRevision());
 		}
 		else
 		{
@@ -312,7 +312,7 @@ void SoftChip::Show_Menu()
 		{
 			Out->Print("Returning...\n");
 			Cfg->Save(ConfigData::Default_ConfigFile);
-            exit(0);
+            Exit_Loader();
 		}
 
 		// Run Game
@@ -871,4 +871,21 @@ void SoftChip::VerifyFlags()
     {
         STM_RebootSystem();
     }
+}
+
+/*******************************************************************************
+ * Exit_Loader: Exit
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void SoftChip::Exit_Loader()
+{
+	// DOL Version
+	if (*(dword*)Memory::Exit_Stub) exit(0);
+
+	// Channel Version
+	SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 }

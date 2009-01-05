@@ -452,6 +452,7 @@ void SoftChip::Load_Disc()
 
 		if (!Disc_Inserted)
 		{
+			Out->SetSilent(false);
 			Out->Print("Please insert a Disc.\n");
 			DI->Wait_CoverClose();
 		}
@@ -675,6 +676,7 @@ void SoftChip::Load_Disc()
     }
     catch (const char* Message)
     {
+		Out->SetSilent(false);
         Out->PrintErr("Exception: %s\n\n", Message);
 		Log->Write("Exception: %s\r\n", Message);
 

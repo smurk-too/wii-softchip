@@ -1,7 +1,7 @@
 /*******************************************************************************
  * DIP.cpp
  *
- * Copyright (c) 2008 Requiem (requiem@century-os.com)
+ * Copyright (c) 2009 Requiem (requiem@century-os.com)
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
@@ -401,7 +401,7 @@ int DIP::Stop_Motor()
 
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_StopMotor, Command, 0x20, Output, 0x20);
 
-	if (Ret == 2) throw "Ioctl error";
+	if (Ret == 2) throw "Ioctl error (DI_StopMotor)";
 
 	Unlock();
 

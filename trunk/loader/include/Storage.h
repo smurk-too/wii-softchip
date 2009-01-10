@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Storage.h
  *
- * Copyright (c) 2008 SoftChip Team
+ * Copyright (c) 2009 SoftChip Team
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
@@ -28,6 +28,7 @@ class Storage
 public:
 	void Initialize_FAT();
 	void Release_FAT();
+	bool Verify_FAT();
 
 	FILE *OpenFile(const char *Path, const char *Mode);
 	bool MakeDir(const char *Path);

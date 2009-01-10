@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Configuration.cpp
  *
- * Copyright (c) 2008 SoftChip Team
+ * Copyright (c) 2009 SoftChip Team
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
@@ -139,11 +139,14 @@ bool Configuration::Save(const char* Path)
     }
 
 	// Write Signature and Version
-	fwrite(ConfigData::Signature, 1, 15, fp);
-	fwrite(&ConfigData::LastVersion, 1, 1, fp);
+	if (fwrite(ConfigData::Signature, 1, 15, fp) != 15) return false;
+	if (fwrite(&ConfigData::LastVersion, 1, 1, fp) != 1) return false;
 
 	// Write Body
-	fwrite(&Data, 1, sizeof(Data), fp);
+	if (fwrite(&Data, 1, sizeof(Data), fp) != sizeof(Data))
+	{
+		return false;
+	}
 
     // Close
     fclose(fp);

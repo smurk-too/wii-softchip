@@ -1,8 +1,8 @@
 /*******************************************************************************
  * SoftChip.cpp
  *
- * Copyright (c) 2008 Requiem (requiem@century-os.com)
- * Copyright (c) 2008 luccax
+ * Copyright (c) 2009 Requiem (requiem@century-os.com)
+ * Copyright (c) 2009 luccax
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
@@ -159,7 +159,7 @@ void SoftChip::Run()
 		if (NextPhase == Phase_Menu)
 		{
 			// Handle Autoboot
-			if (Skip_AutoBoot || !Cfg->Data.AutoBoot || Controls->Wait_ButtonPress(&Controls->Menu, 2))
+			if (Skip_AutoBoot || !Cfg->Data.AutoBoot || Reset_Flag || Controls->Wait_ButtonPress(&Controls->Menu, 2))
 			{
 				Show_Menu();
 			}
@@ -170,6 +170,7 @@ void SoftChip::Run()
 
 			// AutoBoot Done
 			Skip_AutoBoot = true;
+			Reset_Flag = false;
 		}
 
 		if (NextPhase == Phase_SelectIOS)
@@ -233,17 +234,17 @@ void SoftChip::Load_IOS()
 		if (IOS_Loaded)
 		{
 			Out->SetColor(Color_Green, true);
-			Out->Print("[+] IOS %d (Revision %d) Loaded\n\n", IOS_Version, IOS_GetRevision());
+			Out->Print("[+] IOS %d (Rev %d) Loaded\n", IOS_Version, IOS_GetRevision());
 		}
 		else
 		{
-			Out->PrintErr("[-] Error Loading Default IOS\n\n");
+			Out->PrintErr("[-] Error Loading Default IOS\n");
 			throw "Error Loading IOS";
 		}
 
 		if (!DI->Initialize())
 		{
-			Out->PrintErr("[-] Error Initializing DIP-Module.\n\n");
+			Out->PrintErr("[-] Error Initializing DIP-Module.\n");
 			throw "Error Initializing DIP";
 		}
 
@@ -259,13 +260,21 @@ void SoftChip::Load_IOS()
 		NextPhase = Phase_SelectIOS;
 	}
 
-	// Reset Color and Save Menu Position
-	Out->SetColor(Color_White, false);
-	Cursor_Menu = Out->Save_Cursor();
-
 	// Re-Init FAT and Wiimotes
 	SD->Initialize_FAT();
 	Controls->Initialize();
+
+	// Verify FAT
+	if (!SD->Verify_FAT())
+	{
+		Out->SetColor(Color_Yellow, false);
+		Out->Print("[Warning] No Storage Device was found. Configuration won't be saved.\n");
+	}
+
+	// Reset Color and Save Menu Position
+	Out->Print("\n");
+	Out->SetColor(Color_White, false);
+	Cursor_Menu = Out->Save_Cursor();
 }
 
 /*******************************************************************************

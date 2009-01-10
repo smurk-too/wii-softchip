@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Storage.cpp
  *
- * Copyright (c) 2008 SoftChip Team
+ * Copyright (c) 2009 SoftChip Team
  *
  * Distributed under the terms of the GNU General Public License (v3)
  * See http://www.gnu.org/licenses/gpl-3.0.txt for more info.
@@ -109,16 +109,14 @@ bool Storage::MakeDir(const char *Path)
 	if (!FatOk) return false;
 
 	// Verify FAT
-	DIR* dir = opendir("/");
-	if (dir == NULL)
+	if (!Verify_FAT())
 	{
 		// FAT Error (Avoid mkdir)
 		return false;
 	}
 
 	// Open Target Folder
-	closedir(dir);
-	dir = opendir(Path);
+	DIR* dir = opendir(Path);
 
 	// Already Exists?
 	if (dir == NULL)
@@ -135,5 +133,27 @@ bool Storage::MakeDir(const char *Path)
 
 	// Success
 	closedir(dir);
+	return true;
+}
+
+/*******************************************************************************
+ * Verify_FAT: Verify if FAT is working
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+bool Storage::Verify_FAT()
+{
+	// Verify FAT
+	DIR* dir = opendir("/");
+	if (dir == NULL)
+	{
+		// FAT Error
+		return false;
+	}
+
+	// FAT is Ok
 	return true;
 }

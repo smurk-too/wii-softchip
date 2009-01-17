@@ -73,7 +73,7 @@ struct Partition_Info
 {
 	dword	Offset;
 	dword	Type;
-};
+} __attribute__((__packed__));
 
 namespace Offsets
 {

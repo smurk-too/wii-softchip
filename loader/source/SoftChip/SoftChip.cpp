@@ -493,8 +493,13 @@ void SoftChip::Load_Disc()
         Offset = Descriptor.Primary_Offset << 2;
         Out->Print("Partition Info is at: 0x%x\n", Offset);
 
-        // TODO: Support for additional partition types (secondary, tertiary, quaternary) | Fix hardcoded values
-		dword BufferLen = (Descriptor.Primary_Count / 4 + 1) * 0x20;
+        // TODO: Support for additional partition types (secondary, tertiary, quaternary)
+		// TODO: Support for selecting which partition load
+		dword PartSize = sizeof(Wii_Disc::Partition_Info);
+		dword BufferLen = Descriptor.Primary_Count * PartSize;
+
+		// Length must be multiple of 0x20
+		BufferLen += 0x20 - (BufferLen % 0x20);
 		byte *PartBuffer = (byte*)memalign(0x20, BufferLen);
 
 		memset(PartBuffer, 0, BufferLen);
@@ -508,7 +513,7 @@ void SoftChip::Load_Disc()
 
 			if (Partitions[i].Type == 0)
 			{
-				memcpy(&Partition_Info, &Partitions[i], sizeof(Wii_Disc::Partition_Info));
+				memcpy(&Partition_Info, PartBuffer + (i * PartSize), PartSize);
 				break;
 			}
         }
@@ -657,7 +662,7 @@ void SoftChip::Load_Disc()
         Set_VideoMode(*(char*)Memory::Disc_Region);
 
         // Flush application memory range
-        DCFlushRange((void*)0x80000000,0x17fffff);	// TODO: Remove these hardcoded values
+        DCFlushRange((void*)0x80000000, 0x17fffff);	// TODO: Remove these hardcoded values
 
 		// Close the logfile
 		Log->CloseLog();
@@ -689,9 +694,7 @@ void SoftChip::Load_Disc()
         Out->PrintErr("Exception: %s\n\n", Message);
 		Log->Write("Exception: %s\r\n", Message);
 
-		// Prepare Drive for loading again (Is there a better way?)
-		DI->Close();
-		DI->Initialize();
+		// Stop Drive
 		DI->Stop_Motor();
 
 		// Return to Menu

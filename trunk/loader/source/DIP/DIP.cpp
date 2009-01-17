@@ -112,15 +112,17 @@ void DIP::Close()
 int DIP::Inquiry(void* Drive_ID)
 {
 	if (!Drive_ID) throw "Null DriveID pointer";
-	Lock();
 
 	Command[0] = Ioctl::DI_Inquiry << 24;
 
-	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_Inquiry, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error (DI_Inquiry)";
+	Lock();
 
-	memcpy(Drive_ID, Output, 8);
+	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_Inquiry, Command, 0x20, Output, 0x20);
+
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_Inquiry)";
+	memcpy(Drive_ID, Output, 8);
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -136,16 +138,18 @@ int DIP::Inquiry(void* Drive_ID)
 int DIP::Read_DiscID(unsigned long long* Disc_ID)
 {
 	if (!Disc_ID) throw "Null Disc_ID pointer";
-	Lock();
-
+	
 	Command[0] = Ioctl::DI_ReadID << 24;
 
-	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_ReadID, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error (DI_ReadID)";
+	Lock();
 
-	memcpy(Disc_ID, Output, 8);
+	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_ReadID, Command, 0x20, Output, 0x20);
+
 	Unlock();
 
+	if (Ret == 2) throw "Ioctl error (DI_ReadID)";
+	memcpy(Disc_ID, Output, 8);
+	
 	return ((Ret == 1) ? 0 : -Ret);
 }
 
@@ -162,17 +166,18 @@ int DIP::Read(void* Buffer, unsigned int size, unsigned int offset)
 	if (!Buffer) return -1; //throw "Null Buffer";
 	if (reinterpret_cast<unsigned int>(Buffer) & 0x1f) throw "Buffer alignment error";
 
-	Lock();
-
 	memset(Command, 0, 0x20);
 	Command[0] = Ioctl::DI_Read << 24;
 	Command[1] = size;
 	Command[2] = offset >> 2;
 
-	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_Read, Command, 0x20, Buffer, size);
-	if (Ret == 2) throw "Ioctl error (DI_Read)";
+	Lock();
 
+	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_Read, Command, 0x20, Buffer, size);
+	
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_Read)";
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -190,17 +195,18 @@ int DIP::Read_Unencrypted(void* Buffer, unsigned int size, unsigned int offset)
 	if (!Buffer) throw "Null Buffer";
 	if (reinterpret_cast<unsigned int>(Buffer) & 0x1f) throw "Buffer alignment error";
 
-	Lock();
-
 	memset(Command, 0, 0x20);
 	Command[0] = Ioctl::DI_ReadUnencrypted << 24;
 	Command[1] = size;
 	Command[2] = offset >> 2;
 
+	Lock();
+
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_ReadUnencrypted, Command, 0x20, Buffer, size);
-	if (Ret == 2) throw "Ioctl error (DI_ReadUnencrypted)";
 
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_ReadUnencrypted)";
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -215,15 +221,16 @@ int DIP::Read_Unencrypted(void* Buffer, unsigned int size, unsigned int offset)
 
 int DIP::Wait_CoverClose()
 {
-	Lock();
-
 	memset(Command, 0, 0x20);
 	Command[0] = Ioctl::DI_WaitCoverClose << 24;
 
-	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_WaitCoverClose, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error (DI_WaitCoverClose)";
+	Lock();
 
+	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_WaitCoverClose, Command, 0x20, Output, 0x20);
+	
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_WaitCoverClose)";
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -238,16 +245,17 @@ int DIP::Wait_CoverClose()
 
 int DIP::Verify_Cover(bool *Inserted)
 {
-	Lock();
-
 	memset(Command, 0, 0x20);
 	Command[0] = Ioctl::DI_VerifyCover << 24;
 
+	Lock();
+
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_VerifyCover, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error (DI_VerifyCover)";
-	if (Ret == 1) *Inserted = !((bool)*Output);
 
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_VerifyCover)";
+	if (Ret == 1) *Inserted = !((bool)*Output);
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -262,15 +270,16 @@ int DIP::Verify_Cover(bool *Inserted)
 
 int DIP::Reset()
 {
-	Lock();
-
 	Command[0] = Ioctl::DI_Reset << 24;
 	Command[1] = 1;
 
+	Lock();
+
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_Reset, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error (DI_Reset)";
 
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_Reset)";
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -285,16 +294,17 @@ int DIP::Reset()
 
 int DIP::Enable_DVD()
 {
-	Lock();
-
 	memset(Command, 0, 0x20);
 	Command[0] = Ioctl::DI_EnableDVD << 24;
 	Command[1] = 1;
 
+	Lock();
+
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_EnableDVD, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error (DI_EnableDVD)";
 
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_EnableDVD)";
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -309,16 +319,17 @@ int DIP::Enable_DVD()
 
 int DIP::Set_OffsetBase(unsigned int Base)
 {
-	Lock();
-
 	memset(Command, 0, 0x20);
 	Command[0] = Ioctl::DI_SetOffsetBase << 24;
 	Command[1] = Base >> 2;
 
+	Lock();
+
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_SetOffsetBase, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error (DI_SetOffsetBase)";
 
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_SetOffsetBase)";
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -333,17 +344,18 @@ int DIP::Set_OffsetBase(unsigned int Base)
 
 int DIP::Get_OffsetBase(unsigned int* Base)
 {
-	Lock();
-
 	memset(Command, 0, 0x20);
 	Command[0] = Ioctl::DI_GetOffsetBase << 24;
 
-	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_GetOffsetBase, Command, 0x20, Output, 0x20);
-	if (Ret == 2) throw "Ioctl error (DI_GetOffsetBase)";
+	Lock();
 
-	if (Ret == 1) *Base = *((unsigned int*)Output);
+	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_GetOffsetBase, Command, 0x20, Output, 0x20);
+
 	Unlock();
 
+	if (Ret == 2) throw "Ioctl error (DI_GetOffsetBase)";
+	if (Ret == 1) *Base = *((unsigned int*)Output);
+	
 	return ((Ret == 1) ? 0 : -Ret);
 }
 
@@ -359,8 +371,6 @@ int DIP::Open_Partition(unsigned int Offset, void* Ticket, void* Certificate, un
 {
 	static ioctlv	Vectors[5]		__attribute__((aligned(0x20)));
 
-	Lock();
-
 	Command[0] = Ioctl::DI_OpenPartition << 24;
 	Command[1] = Offset;
 
@@ -375,11 +385,13 @@ int DIP::Open_Partition(unsigned int Offset, void* Ticket, void* Certificate, un
 	Vectors[4].data		= Output;
 	Vectors[4].len		= 0x20;
 
-	int Ret = IOS_Ioctlv(Device_Handle, Ioctl::DI_OpenPartition, 3,2,Vectors);
+	Lock();
 
-	if (Ret == 2) throw "Ioctl error (DI_OpenPartition)";
+	int Ret = IOS_Ioctlv(Device_Handle, Ioctl::DI_OpenPartition, 3, 2, Vectors);
 
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_OpenPartition)";
 
 	return ((Ret == 1) ? 0 : -Ret);
 }
@@ -394,16 +406,17 @@ int DIP::Open_Partition(unsigned int Offset, void* Ticket, void* Certificate, un
 
 int DIP::Stop_Motor()
 {
-	Lock();
 	Command[0] = Ioctl::DI_StopMotor << 24;
 	Command[1] = 0;		// Set this to 1 to eject the disc
 	Command[2] = 0;		// This will temporarily kill the drive if set!!!
 
+	Lock();
+
 	int Ret = IOS_Ioctl(Device_Handle, Ioctl::DI_StopMotor, Command, 0x20, Output, 0x20);
 
-	if (Ret == 2) throw "Ioctl error (DI_StopMotor)";
-
 	Unlock();
+
+	if (Ret == 2) throw "Ioctl error (DI_StopMotor)";
 
 	return ((Ret == 1) ? 0 : -Ret);
 }

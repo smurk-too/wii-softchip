@@ -52,6 +52,7 @@ protected:
 	bool			Reset_Flag;				// Flag is set when reset button is pressed
 	// -- Video
 	GXRModeObj*		vmode;					// System Video Mode
+	unsigned int	Video_Mode;				// System Video Mode (NTSC, PAL or MPAL)	
 	void*			framebuffer;			// Framebuffer
 	// -- IOS
 	int				IOS_Version;			// Loaded IOS Version
@@ -70,9 +71,11 @@ private:
 	void	Show_Menu();									// Show the Main Menu
 	void	Show_IOSMenu();									// Show the Menu for selecting IOS
 	void 	Load_Disc();									// Loads the disc
-	void	Set_VideoMode(char Region);						// Set Video Mode
+	void 	Determine_VideoMode(char Region);				// Determines which video mode to use based on current system settings
+	void	Set_VideoMode();								// Set Video Mode
 	bool	Set_GameLanguage(void *Address, int Size);		// Patch Game's Language
 	bool	Remove_002_Protection(void *Address, int Size);	// Remove the 002 protection
+	bool 	Check_Video_Mode(void *Address, int Size);		// Checks if the used video mode is found inside the main.dol
 
 protected:
 	SoftChip();

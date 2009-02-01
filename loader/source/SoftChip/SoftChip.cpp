@@ -473,9 +473,9 @@ void SoftChip::Load_Disc()
         memset(reinterpret_cast<void*>(Memory::Disc_ID), 0, 6);
         DI->Read_DiscID(reinterpret_cast<qword*>(Memory::Disc_ID));
 
-		if ( *(u32 *)(Memory::Disc_ID) == 0x00010001 || *(u32 *)(Memory::Disc_ID) == 0x00010000)
+		if ( *(dword*)(Memory::Disc_ID) == 0x10001 || *(dword*)(Memory::Disc_ID) == 0x10000)
 		{
-			Out->PrintErr("Decrypted dics are not supported.\n\n");
+			Out->PrintErr("Decrypted discs are not supported.\n\n");
             throw "Disc is decrypted";
 		}
 		

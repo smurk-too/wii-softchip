@@ -543,10 +543,6 @@ void SoftChip::Load_Disc()
         DI->Set_OffsetBase(Offset);
         Offset = 0;
 
-        // Get Certificates, Ticket, and Ticket Metadata
-
-        static byte Buffer[0x800] __attribute__((aligned(0x20)));
-
         signed_blob* Certs		= 0;
         signed_blob* Ticket		= 0;
         signed_blob* Tmd		= 0;
@@ -555,39 +551,57 @@ void SoftChip::Load_Disc()
         unsigned int T_Length	= 0;
         unsigned int MD_Length	= 0;
 
+        static byte	Ticket_Buffer[0x800] __attribute__((aligned(0x20)));
+        static byte	Tmd_Buffer[0x49e4] __attribute__((aligned(0x20)));
+
         // Get certificates from the cIOS
         cIOS::Instance()->GetCerts(&Certs, &C_Length);
 
         Out->Print("System certificates at: 0x%x\n", reinterpret_cast<dword>(Certs));
 
-        // Read the buffer
-        DI->Read_Unencrypted(Buffer, 0x800, Offset);
+        // Read the ticket buffer
+        DI->Read_Unencrypted(Ticket_Buffer, 0x800, Partition_Info.Offset << 2);
 
         // Get the ticket pointer
-        Ticket		= reinterpret_cast<signed_blob*>(Buffer);
+        Ticket		= reinterpret_cast<signed_blob*>(Ticket_Buffer);
         T_Length	= SIGNED_TIK_SIZE(Ticket);
 
         Out->Print("Ticket at: 0x%x\n", reinterpret_cast<dword>(Ticket));
 
-        // Get the TMD pointer
-
-        Tmd = reinterpret_cast<signed_blob*>(Buffer + 0x2c0);
-        MD_Length = SIGNED_TMD_SIZE(Tmd);
-
-        Out->Print("Tmd at: 0x%x\n", reinterpret_cast<dword>(Tmd));
-
-        static byte	Tmd_Buffer[0x49e4] __attribute__((aligned(0x20)));
-
-        // Open Partition
+        // Open Partition and get the TMD buffer
         if (DI->Open_Partition(Partition_Info.Offset, 0,0,0, Tmd_Buffer) < 0)
         {
             Out->PrintErr("[-] Error opening partition.\n\n");
 			throw "Open Error";
         }
 
+        // Get the TMD pointer
+        Tmd = reinterpret_cast<signed_blob*>(Tmd_Buffer);
+        MD_Length = SIGNED_TMD_SIZE(Tmd);
+
+        Out->Print("Tmd at: 0x%x\n", reinterpret_cast<dword>(Tmd));
+		
 		Out->Print("[+] Partition opened successfully.\n");
 		Out->Print("IOS requested by the game: %u\n", Tmd_Buffer[0x18b]);
 		Log->Write("IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
+
+		// Identify as the game
+		if (IS_VALID_SIGNATURE(Certs) 	&& IS_VALID_SIGNATURE(Tmd) 	&& IS_VALID_SIGNATURE(Ticket) 
+		&&  C_Length > 0 				&& MD_Length > 0 			&& T_Length > 0)
+		{
+			int ret;
+			ret = ES_Identify(Certs, C_Length, Tmd, MD_Length, Ticket, T_Length, NULL);
+			if (ret < 0)
+			{
+				Out->PrintErr("Error: ES_Identify returned %d\n", ret);
+				Log->Write("Error: ES_Identify returned %d\r\n", ret);
+			
+			} else
+			{
+				Out->Print("ES_Identify successful\n");
+		
+			}			
+		}
 
         // Read apploader header from 0x2440
 

@@ -458,13 +458,17 @@ void SoftChip::Load_Disc()
     try
     {
 		bool Disc_Inserted = false;
-		DI->Verify_Cover(&Disc_Inserted);
-
-		if (!Disc_Inserted)
+		if (DI->Verify_Cover(&Disc_Inserted) < 0)
 		{
-			Out->SetSilent(false);
-			Out->Print("Please insert a Disc.\n");
-			DI->Wait_CoverClose();
+			throw "Verify_Cover failed";
+		} else
+		{
+			if (!Disc_Inserted)
+			{
+				Out->SetSilent(false);
+				Out->Print("Please insert a Disc.\n");
+				DI->Wait_CoverClose();
+			}
 		}
 
 		Out->Print("Loading Game...\n");
@@ -585,26 +589,8 @@ void SoftChip::Load_Disc()
 		Out->Print("IOS requested by the game: %u\n", Tmd_Buffer[0x18b]);
 		Log->Write("IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
 
-		// Identify as the game
-		if (IS_VALID_SIGNATURE(Certs) 	&& IS_VALID_SIGNATURE(Tmd) 	&& IS_VALID_SIGNATURE(Ticket) 
-		&&  C_Length > 0 				&& MD_Length > 0 			&& T_Length > 0)
-		{
-			int ret;
-			ret = ES_Identify(Certs, C_Length, Tmd, MD_Length, Ticket, T_Length, NULL);
-			if (ret < 0)
-			{
-				Out->PrintErr("Error: ES_Identify returned %d\n", ret);
-				Log->Write("Error: ES_Identify returned %d\r\n", ret);
-			
-			} else
-			{
-				Out->Print("ES_Identify successful\n");
-		
-			}			
-		}
 
         // Read apploader header from 0x2440
-
         static Apploader::Header Loader __attribute__((aligned(0x20)));
         Out->Print("Reading apploader header.\n");
         DI->Read(&Loader, sizeof(Apploader::Header), Wii_Disc::Offsets::Apploader);
@@ -718,6 +704,21 @@ void SoftChip::Load_Disc()
         // Cleanup loader information
         DI->Close();
 
+		// Identify as the game
+		if (IS_VALID_SIGNATURE(Certs) 	&& IS_VALID_SIGNATURE(Tmd) 	&& IS_VALID_SIGNATURE(Ticket) 
+		&&  C_Length > 0 				&& MD_Length > 0 			&& T_Length > 0)
+		{
+			int ret;
+			ret = ES_Identify(Certs, C_Length, Tmd, MD_Length, Ticket, T_Length, NULL);
+			if (ret < 0)
+			{
+				Out->PrintErr("Error: ES_Identify returned %d\n", ret);
+			} else
+			{
+				Out->Print("ES_Identify successful\n");
+			}			
+		}
+		
         // Shutdown libogc services
         SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 
@@ -883,7 +884,7 @@ bool SoftChip::Check_Video_Mode(void *Address, int Size)
 
 	while (Size >= 15)
 	{
-		if (Addr[3] == 0x01 && Addr[4] == 0xE0 && Addr[5] == 0x01 && Addr[6] == 0xE0 && Addr[13] == 0x01 && Addr[14] == 0xE0)
+		if (Addr[3] == 0x01 && Addr[4] == 0xE0 && Addr[5] == 0x01 && Addr[6] == 0xE0 && Addr[10] == 0x00 && Addr[13] == 0x01 && Addr[14] == 0xE0)
 		{
 			if (Addr[0] == 0x00) 
 			{
@@ -916,7 +917,7 @@ bool SoftChip::Check_Video_Mode(void *Address, int Size)
 				//Log->Write("MPAL 480p found\r\n");					
 			}
 		}
-		if (Addr[3] == 0x02 && Addr[4] == 0x10 && Addr[5] == 0x02 && Addr[6] == 0x10 && Addr[13] == 0x02 && Addr[14] == 0x10)
+		if (Addr[3] == 0x02 && Addr[4] == 0x10 && Addr[5] == 0x02 && Addr[6] == 0x10 && Addr[10] == 0x17 && Addr[13] == 0x02 && Addr[14] == 0x10)
 		{
 			if (Addr[0] == 0x04) 
 			{
@@ -929,7 +930,7 @@ bool SoftChip::Check_Video_Mode(void *Address, int Size)
 				//Log->Write("PAL 576p found\r\n");					
 			}
 		}
-		if (Addr[3] == 0x01 && Addr[4] == 0x08 && Addr[5] == 0x02 && Addr[6] == 0x0c && Addr[13] == 0x02 && Addr[14] == 0x0c)
+		if (Addr[3] == 0x01 && Addr[4] == 0x08 && Addr[5] == 0x02 && Addr[6] == 0x0c && Addr[10] == 0x17 && Addr[13] == 0x02 && Addr[14] == 0x0c)
 		{
 			if (Addr[0] == 0x06) 
 			{

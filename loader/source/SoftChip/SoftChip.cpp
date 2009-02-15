@@ -762,44 +762,53 @@ void SoftChip::Load_Disc()
 void SoftChip::Determine_VideoMode(char Region)
 {
     // TODO: Some exception handling is needed here
+    vmode = VIDEO_GetPreferredMode(0);
 
 	if (Cfg->Data.SysVMode)
 	{
-		switch (CONF_GetVideo()) {
-			case CONF_VIDEO_NTSC:
-				Video_Mode = (unsigned int)Video::Modes::NTSC;
-				break;
-
-			case CONF_VIDEO_PAL:
-				Video_Mode = (unsigned int)Video::Modes::PAL;
-				break;
-
-			case CONF_VIDEO_MPAL:
-				Video_Mode = (unsigned int)Video::Modes::MPAL;
-				break;
-
-			default:
-				Video_Mode = (unsigned int)Video::Modes::NTSC;
-		}
+		Video_Mode = (vmode->viTVMode) >> 2;
 	}
 	else
 	{
-		switch (Region) {
+		switch (Region) 
+		{
 			case Wii_Disc::Regions::PAL_Default:
 			case Wii_Disc::Regions::PAL_France:
 			case Wii_Disc::Regions::PAL_Germany:
 			case Wii_Disc::Regions::Euro_X:
 			case Wii_Disc::Regions::Euro_Y:
-				Video_Mode = (unsigned int)Video::Modes::PAL;
+				if ((vmode->viTVMode) >> 2 == Video::Modes::PAL60 || (vmode->viTVMode) >> 2 == Video::Modes::PAL)
+				{
+					Video_Mode = (vmode->viTVMode) >> 2;
+				} else
+				{
+					Video_Mode = (unsigned int)Video::Modes::PAL60;
+					if (vmode->xfbMode == VI_XFBMODE_SF)
+					{
+						vmode = &TVEurgb60Hz480Prog;		// PAL 480p
+					} else
+					{
+						vmode = &TVEurgb60Hz480IntDf;		// PAL 480i
+					}				
+				}
 				break;
 
 			case Wii_Disc::Regions::NTSC_USA:
 			case Wii_Disc::Regions::NTSC_Japan:
 			default:
-				if (vmode != &TVNtsc480Prog) vmode = &TVNtsc480IntDf; // Force NTSC Display (576i fix)
 				Video_Mode = (unsigned int)Video::Modes::NTSC;
+				if ((vmode->viTVMode) >> 2 != Video::Modes::NTSC)
+				{
+					if (vmode->xfbMode == VI_XFBMODE_SF)
+					{
+						vmode = &TVNtsc480Prog;			// NTSC 480p
+					} else
+					{
+						vmode = &TVNtsc480IntDf;		// NTSC 480i
+					}				
+				}
 				break;
-		}
+		}		
 	}
 }
 

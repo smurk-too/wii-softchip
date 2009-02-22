@@ -99,10 +99,14 @@ SoftChip::SoftChip()
     Out->Print("This software is distributed under the terms\n");
     Out->Print("of the GNU General Public License (GPLv3)\n");
     Out->Print("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");
+	
+	Out->SetColor(Color_Red, true);
+	Out->Print("This software is for free, if you paid for it, you got ripped off!\n\n");
 
 	// IOS Notice
-	Out->PrintErr("SoftChip uses by default IOS %d, which doesn't load backups!\n", Default_IOS);
-	Out->PrintErr("Don't forget to change it before playing them.\n\n");
+	Out->SetColor(Color_Magenta, false);
+	Out->Print("With hardware modification or for originals use IOS36. For backups\n");
+	Out->Print("without hardware modification, you need a backup cIOS, use IOS249 then.\n\n");
 
 	// Initialize FAT
 	SD->Initialize_FAT();
@@ -111,15 +115,16 @@ SoftChip::SoftChip()
 	SD->MakeDir(ConfigData::SoftChip_Folder);
 
 	// Initialize Configuration	
-	Out->Print("Reading Configuration File...\n");
+	Out->SetColor(Color_White, false);
+	Out->Print("Reading Configuration File...");
 	if (!Cfg->Read(ConfigData::Default_ConfigFile))
 	{
-		Out->Print("Using Defaults.\n\n");
+		Out->Print("using defaults.\n\n");
 		Cfg->Save(ConfigData::Default_ConfigFile);
 	}
 	else
 	{
-		Out->Print("Configuration Loaded.\n\n");
+		Out->Print("configuration loaded.\n\n");
 	}
 
 	// Save IOS Position
@@ -762,13 +767,31 @@ void SoftChip::Load_Disc()
 void SoftChip::Determine_VideoMode(char Region)
 {
     // TODO: Some exception handling is needed here
-    vmode = VIDEO_GetPreferredMode(0);
 
-	if (Cfg->Data.SysVMode)
+	// Get vmode and Video_Mode for system settings first
+	u32 tvmode = CONF_GetVideo();
+    vmode = VIDEO_GetPreferredMode(0);		// Attention: This returns &TVNtsc480Prog for all progressive video modes 
+	switch ( tvmode ) 
 	{
-		Video_Mode = (vmode->viTVMode) >> 2;
+		case CONF_VIDEO_PAL:
+			if ( CONF_GetEuRGB60() > 0 ) 
+			{
+				Video_Mode = Video::Modes::PAL60;
+			} else 
+			{
+				Video_Mode = Video::Modes::PAL;
+			}
+			break;
+		case CONF_VIDEO_MPAL:
+			Video_Mode = Video::Modes::MPAL;
+			break;
+		case CONF_VIDEO_NTSC:
+		default:
+			Video_Mode = Video::Modes::NTSC;
 	}
-	else
+
+	// Overwrite vmode and Video_Mode when disc region video mode is selected and Wii region doesn't match disc region
+	if (!Cfg->Data.SysVMode)
 	{
 		switch (Region) 
 		{
@@ -777,18 +800,15 @@ void SoftChip::Determine_VideoMode(char Region)
 			case Wii_Disc::Regions::PAL_Germany:
 			case Wii_Disc::Regions::Euro_X:
 			case Wii_Disc::Regions::Euro_Y:
-				if ((vmode->viTVMode) >> 2 == Video::Modes::PAL60 || (vmode->viTVMode) >> 2 == Video::Modes::PAL)
+				if (CONF_GetVideo() != CONF_VIDEO_PAL)
 				{
-					Video_Mode = (vmode->viTVMode) >> 2;
-				} else
-				{
-					Video_Mode = (unsigned int)Video::Modes::PAL60;
-					if (vmode->xfbMode == VI_XFBMODE_SF)
+					Video_Mode = Video::Modes::PAL60;
+					if ( CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable() )
 					{
-						vmode = &TVEurgb60Hz480Prog;		// PAL 480p
+						vmode = &TVNtsc480Prog; 	// This seems to be correct!
 					} else
 					{
-						vmode = &TVEurgb60Hz480IntDf;		// PAL 480i
+						vmode = &TVEurgb60Hz480IntDf;
 					}				
 				}
 				break;
@@ -796,18 +816,17 @@ void SoftChip::Determine_VideoMode(char Region)
 			case Wii_Disc::Regions::NTSC_USA:
 			case Wii_Disc::Regions::NTSC_Japan:
 			default:
-				Video_Mode = (unsigned int)Video::Modes::NTSC;
-				if ((vmode->viTVMode) >> 2 != Video::Modes::NTSC)
+				if (CONF_GetVideo() != CONF_VIDEO_NTSC)
 				{
-					if (vmode->xfbMode == VI_XFBMODE_SF)
+					Video_Mode = Video::Modes::NTSC;
+					if ( CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable() )
 					{
-						vmode = &TVNtsc480Prog;			// NTSC 480p
+						vmode = &TVNtsc480Prog;
 					} else
 					{
-						vmode = &TVNtsc480IntDf;		// NTSC 480i
+						vmode = &TVNtsc480IntDf;
 					}				
 				}
-				break;
 		}		
 	}
 }

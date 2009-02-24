@@ -25,8 +25,6 @@
 
 #include "SoftChip.h"
 
-extern "C" void settime(u64 time);
-
 // static void Silent_Report(const char* Args, ...){}		// Blank apploader reporting function
 
 //--------------------------------------
@@ -116,15 +114,15 @@ SoftChip::SoftChip()
 
 	// Initialize Configuration	
 	Out->SetColor(Color_White, false);
-	Out->Print("Reading Configuration File...");
+	Out->Print("Reading Configuration File... ");
 	if (!Cfg->Read(ConfigData::Default_ConfigFile))
 	{
-		Out->Print("using defaults.\n\n");
+		Out->Print("Using defaults.\n\n");
 		Cfg->Save(ConfigData::Default_ConfigFile);
 	}
 	else
 	{
-		Out->Print("configuration loaded.\n\n");
+		Out->Print("Configuration loaded.\n\n");
 	}
 
 	// Save IOS Position
@@ -463,17 +461,17 @@ void SoftChip::Load_Disc()
     try
     {
 		bool Disc_Inserted = false;
+
 		if (DI->Verify_Cover(&Disc_Inserted) < 0)
 		{
 			throw "Verify_Cover failed";
-		} else
+		}
+		
+		if (!Disc_Inserted)
 		{
-			if (!Disc_Inserted)
-			{
-				Out->SetSilent(false);
-				Out->Print("Please insert a Disc.\n");
-				DI->Wait_CoverClose();
-			}
+			Out->SetSilent(false);
+			Out->Print("Please insert a Disc.\n");
+			DI->Wait_CoverClose();
 		}
 
 		Out->Print("Loading Game...\n");
@@ -482,7 +480,7 @@ void SoftChip::Load_Disc()
         memset(reinterpret_cast<void*>(Memory::Disc_ID), 0, 6);
         DI->Read_DiscID(reinterpret_cast<qword*>(Memory::Disc_ID));
 
-		if ( *(dword*)(Memory::Disc_ID) == 0x10001 || *(dword*)(Memory::Disc_ID) == 0x10000)
+		if (*(dword*)(Memory::Disc_ID) == 0x10001 || *(dword*)(Memory::Disc_ID) == 0x10000)
 		{
 			Out->PrintErr("Decrypted discs are not supported.\n\n");
             throw "Disc is decrypted";
@@ -643,10 +641,11 @@ void SoftChip::Load_Disc()
         int		Partition_Offset;
 		bool	Lang_Patched = (Cfg->Data.Language == -1);
 		bool	Removed_002 = (!Cfg->Data.Remove_002);
-		bool	Videomode_found = false;
+		bool	VideoMode_Found = false;
 
         Out->Print("Loading.\t\t\n");
-        while(Load(&Address, &Section_Size, &Partition_Offset))
+
+        while (Load(&Address, &Section_Size, &Partition_Offset))
         {
             Out->Print(".");
 
@@ -654,26 +653,30 @@ void SoftChip::Load_Disc()
 
             DI->Read(Address, Section_Size, Partition_Offset << 2);
             DCFlushRange(Address, Section_Size);
-            // NOTE: This would be the ideal time to patch main.dol
+
+            // main.dol Patching
 			if (!Lang_Patched) Lang_Patched = Set_GameLanguage(Address, Section_Size);
 			if (!Removed_002) Removed_002 = Remove_002_Protection(Address, Section_Size);
-			if (!Videomode_found) Videomode_found = Check_Video_Mode(Address, Section_Size);
+			if (!VideoMode_Found) VideoMode_Found = Check_Video_Mode(Address, Section_Size);
         }
 		
-		if (!Videomode_found)
+		if (!VideoMode_Found)
 		{
 			Log->Write("Error: The used video mode was not found in the main.dol\r\n");
 		}
+
 		if ((Cfg->Data.Language != -1) && (!Lang_Patched))
 		{
 			Log->Write("Error: Did not patch the language, pattern not found\r\n");
 		}
+
 		if (Cfg->Data.Remove_002)
 		{
 			if (Removed_002)
 			{
 				Log->Write("002 error removed\r\n");
-			} else
+			}
+			else
 			{
 				Log->Write("002 error pattern not found\r\n");
 			}
@@ -713,12 +716,13 @@ void SoftChip::Load_Disc()
 		if (IS_VALID_SIGNATURE(Certs) 	&& IS_VALID_SIGNATURE(Tmd) 	&& IS_VALID_SIGNATURE(Ticket) 
 		&&  C_Length > 0 				&& MD_Length > 0 			&& T_Length > 0)
 		{
-			int ret;
-			ret = ES_Identify(Certs, C_Length, Tmd, MD_Length, Ticket, T_Length, NULL);
+			int ret = ES_Identify(Certs, C_Length, Tmd, MD_Length, Ticket, T_Length, NULL);
+
 			if (ret < 0)
 			{
 				Out->PrintErr("Error: ES_Identify returned %d\n", ret);
-			} else
+			}
+			else
 			{
 				Out->Print("ES_Identify successful\n");
 			}			
@@ -770,21 +774,27 @@ void SoftChip::Determine_VideoMode(char Region)
 
 	// Get vmode and Video_Mode for system settings first
 	u32 tvmode = CONF_GetVideo();
-    vmode = VIDEO_GetPreferredMode(0);		// Attention: This returns &TVNtsc480Prog for all progressive video modes 
-	switch ( tvmode ) 
+
+	// Attention: This returns &TVNtsc480Prog for all progressive video modes
+    vmode = VIDEO_GetPreferredMode(0);
+
+	switch (tvmode) 
 	{
 		case CONF_VIDEO_PAL:
-			if ( CONF_GetEuRGB60() > 0 ) 
+			if (CONF_GetEuRGB60() > 0) 
 			{
 				Video_Mode = Video::Modes::PAL60;
-			} else 
+			}
+			else 
 			{
 				Video_Mode = Video::Modes::PAL;
 			}
 			break;
+
 		case CONF_VIDEO_MPAL:
 			Video_Mode = Video::Modes::MPAL;
 			break;
+
 		case CONF_VIDEO_NTSC:
 		default:
 			Video_Mode = Video::Modes::NTSC;
@@ -803,10 +813,12 @@ void SoftChip::Determine_VideoMode(char Region)
 				if (CONF_GetVideo() != CONF_VIDEO_PAL)
 				{
 					Video_Mode = Video::Modes::PAL60;
-					if ( CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable() )
+
+					if (CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable())
 					{
-						vmode = &TVNtsc480Prog; 	// This seems to be correct!
-					} else
+						vmode = &TVNtsc480Prog; // This seems to be correct!
+					}
+					else
 					{
 						vmode = &TVEurgb60Hz480IntDf;
 					}				
@@ -819,15 +831,17 @@ void SoftChip::Determine_VideoMode(char Region)
 				if (CONF_GetVideo() != CONF_VIDEO_NTSC)
 				{
 					Video_Mode = Video::Modes::NTSC;
-					if ( CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable() )
+
+					if (CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable())
 					{
 						vmode = &TVNtsc480Prog;
-					} else
+					}
+					else
 					{
 						vmode = &TVNtsc480IntDf;
 					}				
 				}
-		}		
+		}
 	}
 }
 
@@ -903,7 +917,7 @@ bool SoftChip::Set_GameLanguage(void *Address, int Size)
 
 bool SoftChip::Check_Video_Mode(void *Address, int Size)
 {
-	u8 *Addr				= (u8 *)Address;
+	u8 *Addr	= (u8*)Address;
 
 	/*
 	VI_XFBMODE_DF seems to be an indicator for interlaced video mode
@@ -914,56 +928,64 @@ bool SoftChip::Check_Video_Mode(void *Address, int Size)
 	{
 		if (Addr[3] == 0x01 && Addr[4] == 0xE0 && Addr[5] == 0x01 && Addr[6] == 0xE0 && Addr[10] == 0x00 && Addr[13] == 0x01 && Addr[14] == 0xE0)
 		{
-			if (Addr[0] == 0x00) 
+			switch (Addr[0])
 			{
-				if (Video_Mode == Video::Modes::NTSC && vmode->xfbMode == VI_XFBMODE_DF) return true;
-				//Log->Write("NTSC 480i found\r\n");					
-			}
-			if (Addr[0] == 0x02) 
-			{
-				if (Video_Mode == Video::Modes::NTSC && vmode->xfbMode == VI_XFBMODE_SF) return true;
-				//Log->Write("NTSC 480p found\r\n");					
-			}
-			if (Addr[0] == 0x14) 
-			{
-				if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_DF && vmode->viHeight == 480) return true;
-				//Log->Write("PAL 480i found\r\n");					
-			}
-			if (Addr[0] == 0x16) 
-			{
-				if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && vmode->viHeight == 480) return true;
-				//Log->Write("PAL 480p found\r\n");					
-			}
-			if (Addr[0] == 0x08) 
-			{
-				if (Video_Mode == Video::Modes::MPAL && vmode->xfbMode == VI_XFBMODE_DF) return true;
-				//Log->Write("MPAL 480i found\r\n");					
-			}
-			if (Addr[0] == 0x0A) 
-			{
-				if (Video_Mode == Video::Modes::MPAL && vmode->xfbMode == VI_XFBMODE_SF) return true;
-				//Log->Write("MPAL 480p found\r\n");					
+				case 0x00: 
+					if (Video_Mode == Video::Modes::NTSC && vmode->xfbMode == VI_XFBMODE_DF) return true;
+					//Log->Write("NTSC 480i found\r\n");
+					break;
+
+				case 0x02: 
+					if (Video_Mode == Video::Modes::NTSC && vmode->xfbMode == VI_XFBMODE_SF) return true;
+					//Log->Write("NTSC 480p found\r\n");
+					break;
+
+				case 0x14: 
+					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_DF && vmode->viHeight == 480) return true;
+					//Log->Write("PAL 480i found\r\n");
+					break;
+
+				case 0x16:
+					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && vmode->viHeight == 480) return true;
+					//Log->Write("PAL 480p found\r\n");
+					break;
+
+				case 0x08:
+					if (Video_Mode == Video::Modes::MPAL && vmode->xfbMode == VI_XFBMODE_DF) return true;
+					//Log->Write("MPAL 480i found\r\n");
+					break;
+
+				case 0x0A:
+					if (Video_Mode == Video::Modes::MPAL && vmode->xfbMode == VI_XFBMODE_SF) return true;
+					//Log->Write("MPAL 480p found\r\n");
+					break;
 			}
 		}
+
 		if (Addr[3] == 0x02 && Addr[4] == 0x10 && Addr[5] == 0x02 && Addr[6] == 0x10 && Addr[10] == 0x17 && Addr[13] == 0x02 && Addr[14] == 0x10)
 		{
-			if (Addr[0] == 0x04) 
+			switch (Addr[0])
 			{
-				if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_DF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
-				//Log->Write("PAL 576i found\r\n");					
-			}
-			if (Addr[0] == 0x06) 
-			{
-				if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
-				//Log->Write("PAL 576p found\r\n");					
+				case 0x04:
+					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_DF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
+					//Log->Write("PAL 576i found\r\n");
+					break;
+
+				case 0x06: 
+					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
+					//Log->Write("PAL 576p found\r\n");	
+					break;
 			}
 		}
+
 		if (Addr[3] == 0x01 && Addr[4] == 0x08 && Addr[5] == 0x02 && Addr[6] == 0x0c && Addr[10] == 0x17 && Addr[13] == 0x02 && Addr[14] == 0x0c)
 		{
-			if (Addr[0] == 0x06) 
+			switch (Addr[0])
 			{
-				if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
-				//Log->Write("PAL 576p* found\r\n");					
+				case 0x06:
+					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
+					//Log->Write("PAL 576p* found\r\n");
+					break;
 			}
 		}
 		

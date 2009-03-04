@@ -75,7 +75,6 @@ private:
 	void	Set_VideoMode();								// Set Video Mode
 	bool	Set_GameLanguage(void *Address, int Size);		// Patch Game's Language
 	bool	Remove_002_Protection(void *Address, int Size);	// Remove the 002 protection
-	bool 	Check_Video_Mode(void *Address, int Size);		// Checks if the used video mode is found inside the main.dol
 
 protected:
 	SoftChip();

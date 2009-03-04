@@ -292,7 +292,7 @@ void SoftChip::Load_IOS()
 void SoftChip::Show_Menu()
 {
 	std::string Languages[]	= { "System Default", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
-	std::string VModes[] = { "System Settings", "Disc Region" };
+	std::string VModes[] = { "Force Wii Region", "Disc Region(default)" };
 	std::string BoolOption[] = { "Disabled", "Enabled" };
 
 	// Restore Menu Position
@@ -477,8 +477,9 @@ void SoftChip::Load_Disc()
 		Out->Print("Loading Game...\n");
         DI->Reset();
 
-        memset(reinterpret_cast<void*>(Memory::Disc_ID), 0, 6);
-        DI->Read_DiscID(reinterpret_cast<qword*>(Memory::Disc_ID));
+        // Read the discID into the memory
+		memset((dvddiskid *)(Memory::Disc_ID), 0, 0x20);
+        DI->Read_DiscID((dvddiskid *)(Memory::Disc_ID));
 
 		if (*(dword*)(Memory::Disc_ID) == 0x10001 || *(dword*)(Memory::Disc_ID) == 0x10000)
 		{
@@ -486,7 +487,7 @@ void SoftChip::Load_Disc()
             throw "Disc is decrypted";
 		}
 		
-		//Determine the video mode to use
+		// Determine the video mode to use(requires the discID in memory)
         Determine_VideoMode(*(char*)Memory::Disc_Region);
 		
 		// Read header & process info
@@ -607,7 +608,7 @@ void SoftChip::Load_Disc()
 
         Out->Print("Reading payload.\n");
 
-        // Read apploader.bin
+        // Read apploader from 0x2460
         DI->Read((void*)Memory::Apploader, Loader.Size + Loader.Trailer_Size, Wii_Disc::Offsets::Apploader + 0x20);
         DCFlushRange((void*)(((int)&Loader) + 0x20),Loader.Size + Loader.Trailer_Size);
 
@@ -626,6 +627,7 @@ void SoftChip::Load_Disc()
          * We should be able to report, but it isn't working.
          * Probably an alignment issue.
          *
+		 TODO: Check if the changed Read_DiscID fixed the problem
 
         // Set reporting callback
         Out->Print("Setting reporting callback.\n");
@@ -641,7 +643,6 @@ void SoftChip::Load_Disc()
         int		Partition_Offset;
 		bool	Lang_Patched = (Cfg->Data.Language == -1);
 		bool	Removed_002 = (!Cfg->Data.Remove_002);
-		bool	VideoMode_Found = false;
 
         Out->Print("Loading.\t\t\n");
 
@@ -655,16 +656,11 @@ void SoftChip::Load_Disc()
             DCFlushRange(Address, Section_Size);
 
             // main.dol Patching
+			// TODO: Search the patch offsets only in the main.dol
 			if (!Lang_Patched) Lang_Patched = Set_GameLanguage(Address, Section_Size);
 			if (!Removed_002) Removed_002 = Remove_002_Protection(Address, Section_Size);
-			if (!VideoMode_Found) VideoMode_Found = Check_Video_Mode(Address, Section_Size);
         }
 		
-		if (!VideoMode_Found)
-		{
-			Log->Write("Error: The used video mode was not found in the main.dol\r\n");
-		}
-
 		if ((Cfg->Data.Language != -1) && (!Lang_Patched))
 		{
 			Log->Write("Error: Did not patch the language, pattern not found\r\n");
@@ -770,8 +766,6 @@ void SoftChip::Load_Disc()
 
 void SoftChip::Determine_VideoMode(char Region)
 {
-    // TODO: Some exception handling is needed here
-
 	// Get vmode and Video_Mode for system settings first
 	u32 tvmode = CONF_GetVideo();
 
@@ -858,9 +852,10 @@ void SoftChip::Set_VideoMode()
 {
     // TODO: Some exception handling is needed here
  
-    // Set 0x800000cc based on system settings
-    // For some reason, setting this before VIDEO_ calls has better PAL compatibility.
-    *(unsigned int*)Memory::Video_Mode = Video_Mode;
+    // The video mode (PAL/NTSC/MPAL) is determined by the value of 0x800000cc
+    // The combination Video_Mode = NTSC and vmode = [PAL]576i, results in an error
+    
+	*(unsigned int*)Memory::Video_Mode = Video_Mode;
 
     VIDEO_Configure(vmode);
     VIDEO_SetNextFramebuffer(framebuffer);
@@ -907,94 +902,6 @@ bool SoftChip::Set_GameLanguage(void *Address, int Size)
 	return false;
 }
 
-/*******************************************************************************
- * Check_Video_Mode: Checks if the used video mode is found inside the main.dol
- * -----------------------------------------------------------------------------
- * Return Values:
- *	returns true if video mode is found
- *
- ******************************************************************************/
-
-bool SoftChip::Check_Video_Mode(void *Address, int Size)
-{
-	u8 *Addr	= (u8*)Address;
-
-	/*
-	VI_XFBMODE_DF seems to be an indicator for interlaced video mode
-	VI_XFBMODE_SF seems to be an indicator for progressive video mode
-	*/
-
-	while (Size >= 15)
-	{
-		if (Addr[3] == 0x01 && Addr[4] == 0xE0 && Addr[5] == 0x01 && Addr[6] == 0xE0 && Addr[10] == 0x00 && Addr[13] == 0x01 && Addr[14] == 0xE0)
-		{
-			switch (Addr[0])
-			{
-				case 0x00: 
-					if (Video_Mode == Video::Modes::NTSC && vmode->xfbMode == VI_XFBMODE_DF) return true;
-					//Log->Write("NTSC 480i found\r\n");
-					break;
-
-				case 0x02: 
-					if (Video_Mode == Video::Modes::NTSC && vmode->xfbMode == VI_XFBMODE_SF) return true;
-					//Log->Write("NTSC 480p found\r\n");
-					break;
-
-				case 0x14: 
-					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_DF && vmode->viHeight == 480) return true;
-					//Log->Write("PAL 480i found\r\n");
-					break;
-
-				case 0x16:
-					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && vmode->viHeight == 480) return true;
-					//Log->Write("PAL 480p found\r\n");
-					break;
-
-				case 0x08:
-					if (Video_Mode == Video::Modes::MPAL && vmode->xfbMode == VI_XFBMODE_DF) return true;
-					//Log->Write("MPAL 480i found\r\n");
-					break;
-
-				case 0x0A:
-					if (Video_Mode == Video::Modes::MPAL && vmode->xfbMode == VI_XFBMODE_SF) return true;
-					//Log->Write("MPAL 480p found\r\n");
-					break;
-			}
-		}
-
-		if (Addr[3] == 0x02 && Addr[4] == 0x10 && Addr[5] == 0x02 && Addr[6] == 0x10 && Addr[10] == 0x17 && Addr[13] == 0x02 && Addr[14] == 0x10)
-		{
-			switch (Addr[0])
-			{
-				case 0x04:
-					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_DF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
-					//Log->Write("PAL 576i found\r\n");
-					break;
-
-				case 0x06: 
-					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
-					//Log->Write("PAL 576p found\r\n");	
-					break;
-			}
-		}
-
-		if (Addr[3] == 0x01 && Addr[4] == 0x08 && Addr[5] == 0x02 && Addr[6] == 0x0c && Addr[10] == 0x17 && Addr[13] == 0x02 && Addr[14] == 0x0c)
-		{
-			switch (Addr[0])
-			{
-				case 0x06:
-					if (Video_Mode == Video::Modes::PAL && vmode->xfbMode == VI_XFBMODE_SF && (vmode->viHeight == 524 || vmode->viHeight == 528 || vmode->viHeight == 574)) return true;
-					//Log->Write("PAL 576p* found\r\n");
-					break;
-			}
-		}
-		
-		Addr += 1;
-		Size -= 1;
-	}
-
-	return false;
-}
 
 /*******************************************************************************
  * Remove_002_protection: Removes the 002 copy protection

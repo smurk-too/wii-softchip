@@ -32,7 +32,7 @@ public:
 	// Ioctl Commands
 
 	int Inquiry(void* Drive_ID);
-	int	Read_DiscID(unsigned long long* Disc_ID);
+	int	Read_DiscID(dvddiskid* Disc_ID);
 	int Read(void* Buffer, unsigned int size, unsigned int offset);
 	int	Wait_CoverClose();
 	int Verify_Cover(bool *Inserted);

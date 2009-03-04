@@ -135,7 +135,7 @@ int DIP::Inquiry(void* Drive_ID)
  *
  ******************************************************************************/
 
-int DIP::Read_DiscID(unsigned long long* Disc_ID)
+int DIP::Read_DiscID(dvddiskid* Disc_ID)
 {
 	if (!Disc_ID) throw "Null Disc_ID pointer";
 	
@@ -148,7 +148,7 @@ int DIP::Read_DiscID(unsigned long long* Disc_ID)
 	Unlock();
 
 	if (Ret == 2) throw "Ioctl error (DI_ReadID)";
-	memcpy(Disc_ID, Output, 8);
+	memcpy(Disc_ID, Output, 0x20);
 	
 	return ((Ret == 1) ? 0 : -Ret);
 }

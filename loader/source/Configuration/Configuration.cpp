@@ -165,7 +165,7 @@ bool Configuration::Parse(FILE *fp)	// Default Settings
 {
 	Data.IOS = Default_IOS;
 	Data.Language = -1;
-	Data.SysVMode = true;
+	Data.SysVMode = false;
 	Data.AutoBoot = false;
 	Data.Silent = false;
 	Data.Logging = false;

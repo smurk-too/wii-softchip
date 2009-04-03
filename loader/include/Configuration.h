@@ -31,9 +31,9 @@ namespace ConfigData
 {
 	const byte LastVersion = 3;
 	const char Signature[] = "B5662343D78AD6D";
-	const char SoftChip_Folder[] = "/SoftChip";
-	const char Default_ConfigFile[] = "/SoftChip/Default.cfg";
-	const char Default_LogFile[] = "/SoftChip/Default.log";
+	const char SoftChip_Folder[] = "sd:/SoftChip";
+	const char Default_ConfigFile[] = "sd:/SoftChip/Default.cfg";
+	const char Default_LogFile[] = "sd:/SoftChip/Default.log";
 
 	struct Ver3
 	{

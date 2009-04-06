@@ -593,6 +593,15 @@ void SoftChip::Load_Disc()
 		Out->Print("IOS requested by the game: %u\n", Tmd_Buffer[0x18b]);
 		Log->Write("IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
 
+        /* Filling the memory for the apploader, it seems to have an effect on it */
+        *(dword*)Memory::Sys_Magic	= 0x0d15ea5e;
+        *(dword*)Memory::Version	= 1;
+        *(dword*)Memory::Arena_L	= 0x00000000;
+        *(dword*)Memory::Bus_Speed	= 0x0E7BE2C0;
+        *(dword*)Memory::CPU_Speed	= 0x2B73A840;
+
+        // Enable online mode in games
+        memcpy((dword*)Memory::Online_Check, (dword*)Memory::Disc_ID, 4);
 
         // Read apploader header from 0x2440
         static Apploader::Header Loader __attribute__((aligned(0x20)));
@@ -610,7 +619,7 @@ void SoftChip::Load_Disc()
 
         // Read apploader from 0x2460
         DI->Read((void*)Memory::Apploader, Loader.Size + Loader.Trailer_Size, Wii_Disc::Offsets::Apploader + 0x20);
-        DCFlushRange((void*)(((int)&Loader) + 0x20),Loader.Size + Loader.Trailer_Size);
+        DCFlushRange((void*)Memory::Apploader,Loader.Size + Loader.Trailer_Size);
 
         // Set up loader function pointers
         Apploader::Start	Start	= Loader.Entry_Point;
@@ -627,15 +636,15 @@ void SoftChip::Load_Disc()
          * We should be able to report, but it isn't working.
          * Probably an alignment issue.
          *
-		 TODO: Check if the changed Read_DiscID fixed the problem
-
+		 * Enabled the reporting callback for testing
+		 TODO: Remove/change this comment if everything works
+		*/
+		
         // Set reporting callback
         Out->Print("Setting reporting callback.\n");
         Apploader::Report Report = (Apploader::Report)printf;
         Enter(Report);
-
-        */
-
+        
         // Read fst, bi2, and main.dol information from disc
 
         void*	Address = 0;
@@ -677,16 +686,6 @@ void SoftChip::Load_Disc()
 				Log->Write("002 error pattern not found\r\n");
 			}
 		}
-
-        // Patch in info missing from apploader reads
-        *(dword*)Memory::Sys_Magic	= 0x0d15ea5e;
-        *(dword*)Memory::Version	= 1;
-        *(dword*)Memory::Arena_L	= 0x00000000;
-        *(dword*)Memory::Bus_Speed	= 0x0E7BE2C0;
-        *(dword*)Memory::CPU_Speed	= 0x2B73A840;
-
-        // Enable online mode in games
-        memcpy((dword*)Memory::Online_Check, (dword*)Memory::Disc_ID, 4);
 
         // Retrieve application entry point
         void* Entry = Exit();

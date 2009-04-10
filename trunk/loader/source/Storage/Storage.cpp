@@ -16,12 +16,10 @@
 // Includes
 
 #include <sdcard/wiisd_io.h>
+//#include <ogc/usbstorage.h>
 #include <stdio.h>
 
 #include "Storage.h"
-
-//extern "C" bool sdio_Startup(void);
-//extern "C" bool sdio_Deinitialize(void);
 
 //--------------------------------------
 // Storage Class
@@ -56,17 +54,12 @@ Storage::~Storage() {}
 
 void Storage::Initialize_FAT()
 {
-	/* TODO: Remove all unneeded code after testing */
-
-    // Mount the file system
+   // Mount the file system
 	__io_wiisd.startup();
 	FatOk = fatMountSimple("sd", &__io_wiisd);
 
     //__io_usbstorage.startup();
 	//fatMountSimple("usb", &__io_usbstorage);
-
-	//sdio_Startup();
-	//FatOk = fatInitDefault();
 }
 
 /*******************************************************************************
@@ -79,19 +72,14 @@ void Storage::Initialize_FAT()
 
 void Storage::Release_FAT()
 {
-	/* TODO: Remove all unneeded code after testing */
-
 	// Unmount FAT
 	fatUnmount("sd");
 	__io_wiisd.shutdown();
-	FatOk = false;
-	
+
 	//fatUnmount("usb");
 	//__io_usbstorage.shutdown();
-	
-	// Shutdown sdio
-	//sdio_Startup();
-	//sdio_Deinitialize();
+
+	FatOk = false;
 }
 
 /*******************************************************************************

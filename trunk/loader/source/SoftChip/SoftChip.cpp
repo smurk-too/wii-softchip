@@ -96,7 +96,7 @@ SoftChip::SoftChip()
 	Out->Print("Wii SoftChip v0.0.1-pre\n");
     Out->Print("This software is distributed under the terms\n");
     Out->Print("of the GNU General Public License (GPLv3)\n");
-    Out->Print("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n\n");
+    Out->Print("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n");
 	
 	Out->SetColor(Color_Red, true);
 	Out->Print("This software is for free, if you paid for it, you got ripped off!\n\n");
@@ -367,6 +367,9 @@ void SoftChip::Show_Menu()
 
 void SoftChip::Show_IOSMenu()
 {
+	// Saving config file before IOS selection to keep a working file in case a not working IOS is selected
+	Cfg->Save(ConfigData::Default_ConfigFile);
+
 	dword i, Count = 0;
 	dword Cfg_IOS = 0;
 
@@ -383,6 +386,7 @@ void SoftChip::Show_IOSMenu()
 	{
 		switch (IOS->SysTitles[i])
 		{
+			case 0:		// ???
 			case 1:		// BOOT2
 			case 2:		// System Menu
 			case 0x100:	// BC
@@ -423,7 +427,6 @@ void SoftChip::Show_IOSMenu()
 		// Load IOS
 		if (Controls->Accept.Active)
 		{
-			Cfg->Save(ConfigData::Default_ConfigFile);
             NextPhase = Phase_IOS;
 			return;
 		}
@@ -631,15 +634,6 @@ void SoftChip::Load_Disc()
         Out->Print("Retrieving function pointers from apploader.\n");
         Start(&Enter, &Load, &Exit);
 
-        /*
-         * This is what's causing the apploader errors.
-         * We should be able to report, but it isn't working.
-         * Probably an alignment issue.
-         *
-		 * Enabled the reporting callback for testing
-		 TODO: Remove/change this comment if everything works
-		*/
-		
         // Set reporting callback
         Out->Print("Setting reporting callback.\n");
         Apploader::Report Report = (Apploader::Report)printf;

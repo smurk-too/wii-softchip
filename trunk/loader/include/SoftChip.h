@@ -67,14 +67,14 @@ private:
 	void VerifyFlags();					// Verify if the flags are set
 	void Exit_Loader();					// Return to Loader or System Menu
 
-	void	Load_IOS();										// Load the IOS
-	void	Show_Menu();									// Show the Main Menu
-	void	Show_IOSMenu();									// Show the Menu for selecting IOS
-	void 	Load_Disc();									// Loads the disc
-	void 	Determine_VideoMode(char Region);				// Determines which video mode to use based on current system settings
-	void	Set_VideoMode();								// Set Video Mode
-	bool	Set_GameLanguage(void *Address, int Size);		// Patch Game's Language
-	bool	Remove_002_Protection(void *Address, int Size);	// Remove the 002 protection
+	void	Load_IOS();												// Load the IOS
+	void	Show_Menu();											// Show the Main Menu
+	void	Show_IOSMenu();											// Show the Menu for selecting IOS
+	void 	Load_Disc();											// Loads the disc
+	void 	Determine_VideoMode(char Region);						// Determines which video mode to use based on current system settings
+	void	Set_VideoMode();										// Set Video Mode
+	bool	Set_GameLanguage(void *Address, int Size, char Region);// Patch Game's Language
+	bool	Remove_002_Protection(void *Address, int Size);			// Remove the 002 protection
 
 protected:
 	SoftChip();

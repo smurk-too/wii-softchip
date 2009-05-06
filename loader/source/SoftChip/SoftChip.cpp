@@ -291,7 +291,7 @@ void SoftChip::Load_IOS()
 
 void SoftChip::Show_Menu()
 {
-	std::string Languages[]	= { "System Default", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
+	std::string Languages[]	= { "Auto Force Language", "System Default", "Japanese", "English", "German", "French", "Spanish", "Italian", "Dutch", "S. Chinese", "T. Chinese", "Korean" };
 	std::string VModes[] = { "Force Wii Region", "Disc Region(default)" };
 	std::string BoolOption[] = { "Disabled", "Enabled" };
 
@@ -308,7 +308,7 @@ void SoftChip::Show_Menu()
 	Out->SetColor(Color_White, false);
 
 	Out->CreateMenu();
-	Console::Option *oLang = Out->CreateOption("Game's Language: ", Languages, 11, Cfg->Data.Language + 1);
+	Console::Option *oLang = Out->CreateOption("Game's Language: ", Languages, 12, Cfg->Data.Language + 2);
 	Console::Option *oMode = Out->CreateOption("Set Video Mode using: ", VModes, 2, !Cfg->Data.SysVMode);
 	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
 	Console::Option *oSlnt = Out->CreateOption("Silent: ", BoolOption, 2, Cfg->Data.Silent);
@@ -345,7 +345,7 @@ void SoftChip::Show_Menu()
 
 		// Update Menu
 		Out->UpdateMenu(Controls);
-		Cfg->Data.Language = oLang->Index - 1;
+		Cfg->Data.Language = oLang->Index - 2;
 		Cfg->Data.SysVMode = !oMode->Index;
 		Cfg->Data.AutoBoot = oBoot->Index;
 		Cfg->Data.Silent = oSlnt->Index;
@@ -660,7 +660,7 @@ void SoftChip::Load_Disc()
 
             // main.dol Patching
 			// TODO: Search the patch offsets only in the main.dol
-			if (!Lang_Patched) Lang_Patched = Set_GameLanguage(Address, Section_Size);
+			if (!Lang_Patched) Lang_Patched = Set_GameLanguage(Address, Section_Size, *(char*)Memory::Disc_Region);
 			if (!Removed_002) Removed_002 = Remove_002_Protection(Address, Section_Size);
         }
 		
@@ -867,7 +867,7 @@ void SoftChip::Set_VideoMode()
  *
  ******************************************************************************/
 
-bool SoftChip::Set_GameLanguage(void *Address, int Size)
+bool SoftChip::Set_GameLanguage(void *Address, int Size, char Region)
 {
 	unsigned int PatchData[3]	= { 0x7C600775, 0x40820010, 0x38000000 };
 	unsigned int *Addr			= (unsigned int*)Address;
@@ -879,8 +879,26 @@ bool SoftChip::Set_GameLanguage(void *Address, int Size)
 		{
 			if (*Addr == 0x88610008)
 			{
-				*Addr = (unsigned int)(0x38600000 | Cfg->Data.Language);
-				return true;
+				if (Cfg->Data.Language == -2)
+				{
+					switch (Region) 
+					{
+						case Wii_Disc::Regions::NTSC_Japan:
+							*Addr = (unsigned int)(0x38600000 | 0);
+							break;
+							
+						case Wii_Disc::Regions::NTSC_USA:
+							*Addr = (unsigned int)(0x38600000 | 1);
+							break;
+							
+						default:
+							return false;
+					}
+				} else
+				{				
+					*Addr = (unsigned int)(0x38600000 | Cfg->Data.Language);
+					return true;
+				}
 			}
 		}
 		else if (Addr[0] == PatchData[0] && Addr[1] == PatchData[1] && Addr[2] == PatchData[2])

@@ -885,11 +885,11 @@ bool SoftChip::Set_GameLanguage(void *Address, int Size, char Region)
 					{
 						case Wii_Disc::Regions::NTSC_Japan:
 							*Addr = (unsigned int)(0x38600000 | 0);
-							break;
+							return true;
 							
 						case Wii_Disc::Regions::NTSC_USA:
 							*Addr = (unsigned int)(0x38600000 | 1);
-							break;
+							return true;
 							
 						default:
 							return false;

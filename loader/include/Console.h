@@ -65,10 +65,12 @@ protected:
 public:
 	// Basics
 	void	Print(const char *Format, ...);		// Print Formatted
-	void	PrintErr(const char *Format, ...);	// Print Formatted (Red)
-	void	SetColor(int Color, bool Bright);	// Set Foreground Color
-	void	SetSilent(bool Enable);				// Enable or Disable Silent Option
-	void	Clear();							// Clear the Console
+	void	PrintErr(const char *Format, ...);		// Print Formatted (Red)
+	void	SetColor(int Color, bool Bright);		// Set Foreground Color
+	void	SetSilent(bool Enable);					// Enable or Disable Silent Option
+	void	Clear();								// Clear the Console
+	void	Print_Disclaimer();						// Print the Disclaimer
+	void	Reprint();								// Print the complete Output again
 
 	// Cursor
 	dword	Save_Cursor();						// Save Position

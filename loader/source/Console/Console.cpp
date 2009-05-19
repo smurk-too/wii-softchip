@@ -106,6 +106,65 @@ void Console::Clear()
 }
 
 /*******************************************************************************
+ * Print_Disclaimer: Print the Disclaimer
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Console::Print_Disclaimer()
+{
+	// Clear Console
+	printf("\x1b[J");
+
+	SetColor(Color_White, true);
+	printf("Wii SoftChip v0.0.1-pre\n");
+
+	SetColor(Color_White, false);
+    printf("This software is distributed under the terms\n");
+    printf("of the GNU General Public License (GPLv3)\n");
+    printf("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n");
+	
+	SetColor(Color_Red, true);
+	printf("This software is for free, if you paid for it, you got ripped off!\n");
+	printf("\n");
+
+	SetColor(Color_White, true);
+	printf("Official Homepage: http://www.softchip-mod.com/\n");
+	printf("Sourcecode available at: http://code.google.com/p/wii-softchip/\n");
+	printf("Official irc chatroom: irc://freenode/SoftChip\n");
+	printf("\n");
+	
+	// IOS Notice
+	SetColor(Color_White, false);
+	printf("Which IOS to use:\n");
+	printf("To play retail discs or backups with hardware modification, use IOS36\n");
+	printf("or the IOS requested by the game, if you know which one it is.\n");
+	printf("To play backups without hardware modification, use IOS249.\n");
+	printf("\n");
+}
+
+/*******************************************************************************
+ * Reprint: Print the complete Output again
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Console::Reprint()
+{
+	// Clear Console
+	printf("\x1b[J");
+
+	if (!Silent)
+	{
+		printf(Output.c_str()); 
+	}
+}
+
+/*******************************************************************************
  * SetColor: Change Foreground Color
  * -----------------------------------------------------------------------------
  * Return Values:
@@ -134,14 +193,7 @@ void Console::SetSilent(bool Enable)
 	// Set
 	Silent = Enable;
 
-	// Clear Console
-	printf("\x1b[J");
-
-	// Re-Print
-	if (!Enable)
-	{
-		printf(Output.c_str()); 
-	}
+	Reprint();
 }
 
 /*******************************************************************************

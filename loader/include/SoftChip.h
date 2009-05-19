@@ -24,10 +24,11 @@
 #include "Configuration.h"
 #include "Logger.h"
 
-#define Phase_IOS		0
-#define Phase_Menu		1
-#define Phase_SelectIOS	2
-#define Phase_Play		3
+#define Phase_IOS				0
+#define Phase_Menu				1
+#define Phase_SelectIOS			2
+#define Phase_Play				3
+#define Phase_Show_Disclaimer	4
 
 //--------------------------------------
 // SoftChip Class

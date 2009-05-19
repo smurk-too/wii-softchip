@@ -81,6 +81,10 @@ bool Configuration::Read(const char *Path)
 		// Get File Version		
 		switch (Buffer[15]) 
 		{
+			case 4:		// Version 4
+				Parser = new ConfigVer4();
+				break;
+
 			case 3:		// Version 3
 				Parser = new ConfigVer3();
 				break;
@@ -170,16 +174,36 @@ bool Configuration::Parse(FILE *fp)	// Default Settings
 	Data.Silent = false;
 	Data.Logging = false;
 	Data.Remove_002 = false;
+	Data.Fake_IOS_Version = false;
 	return true;
 }
 
-bool ConfigVer3::Parse(FILE *fp)	// Ver3 Settings
+bool ConfigVer4::Parse(FILE *fp)	// Ver4 Settings
 {
 	// Get File Data
 	if (fread(&Data, 1, sizeof(Data), fp) != sizeof(Data))
 		return false;
 	else
 		return true;
+}
+
+bool ConfigVer3::Parse(FILE *fp)	// Ver3 Settings
+{
+	// Get File Data
+	ConfigData::Ver3 Temp;
+	if (fread(&Temp, 1, sizeof(Temp), fp) != sizeof(Temp))
+		return false;
+	
+	// Convert
+	Configuration::Parse(0);
+	Data.IOS = Temp.IOS;
+	Data.Language = Temp.Language;
+	Data.AutoBoot = Temp.AutoBoot;
+	Data.SysVMode = Temp.SysVMode;
+	Data.Silent = Temp.Silent;
+	Data.Logging = Temp.Logging;
+	Data.Remove_002 = Temp.Remove_002;
+	return true;
 }
 
 bool ConfigVer2::Parse(FILE *fp)	// Ver2 Settings

@@ -321,6 +321,7 @@ void SoftChip::Show_Menu()
 	Console::Option *oSlnt = Out->CreateOption("Silent: ", BoolOption, 2, Cfg->Data.Silent);
 	Console::Option *oLogg = Out->CreateOption("Logging: ", BoolOption, 2, Cfg->Data.Logging);
 	Console::Option *o002  = Out->CreateOption("Remove 002 Protection: ", BoolOption, 2, Cfg->Data.Remove_002);
+	Console::Option *oIOS  = Out->CreateOption("Fake IOS version: ", BoolOption, 2, Cfg->Data.Fake_IOS_Version);
 
     while (true)
     {
@@ -364,6 +365,7 @@ void SoftChip::Show_Menu()
 		Cfg->Data.Silent = oSlnt->Index;
 		Cfg->Data.Logging = oLogg->Index;
 		Cfg->Data.Remove_002 = o002->Index;
+		Cfg->Data.Fake_IOS_Version = oIOS->Index;
 		
 		VerifyFlags();
         VIDEO_WaitVSync();
@@ -643,7 +645,21 @@ void SoftChip::Load_Disc()
 
         // Enable online mode in games
         memcpy((dword*)Memory::Online_Check, (dword*)Memory::Disc_ID, 4);
-
+		
+		// Write into memory which IOS is used, or fake this information
+		u32 ios;
+		if (Cfg->Data.Fake_IOS_Version)
+		{
+			Out->Print("Writing the information that IOS %u (Rev %u) is loaded into memory\n", Tmd_Buffer[0x18b], 0xffff);
+			ios = Tmd_Buffer[0x18b] * 0x10000 + 0xffff;
+		} else
+		{
+			Out->Print("Writing the information that IOS %u (Rev %u) is loaded into memory\n", IOS_GetVersion(), IOS_GetRevision());
+			ios = IOS_GetVersion() * 0x10000 + IOS_GetRevision();
+		}
+		*(dword*)0x80003140 = ios;
+		*(dword*)0x80003144 = 0x00062507;
+		
         // Read apploader header from 0x2440
         static Apploader::Header Loader __attribute__((aligned(0x20)));
         Out->Print("Reading apploader header.\n");

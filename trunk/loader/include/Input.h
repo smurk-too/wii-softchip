@@ -44,6 +44,7 @@ public:
 	Control Menu;
 	Control Plus;
 	Control Minus;
+	Control Info;
 	Control Any;
 
 public:

@@ -75,9 +75,9 @@ SoftChip::SoftChip()
     if (vmode->viTVMode & VI_NON_INTERLACE) VIDEO_WaitVSync();
 
 	// Set console parameters
-    int x = 20, y = 20, w, h;
-    w = vmode->fbWidth - (x * 2);
-    h = vmode->xfbHeight - (y + 20);
+    int x = 24, y = 32, w, h;
+    w = vmode->fbWidth - (32);
+    h = vmode->xfbHeight - (48);
 
     // Initialize the console - CON_InitEx works after VIDEO_ calls
 	CON_InitEx(vmode, x, y, w, h);
@@ -93,18 +93,9 @@ SoftChip::SoftChip()
 	Out->SetSilent(true);
 
 	// Banner (TODO: Change to an image)
-	Out->Print("Wii SoftChip v0.0.1-pre\n");
-    Out->Print("This software is distributed under the terms\n");
-    Out->Print("of the GNU General Public License (GPLv3)\n");
-    Out->Print("See http://www.gnu.org/licenses/gpl-3.0.txt for more info.\n");
 	
-	Out->SetColor(Color_Red, true);
-	Out->Print("This software is for free, if you paid for it, you got ripped off!\n\n");
-
-	// IOS Notice
-	Out->SetColor(Color_Magenta, false);
-	Out->Print("With hardware modification or for originals use IOS36. For backups\n");
-	Out->Print("without hardware modification, you need a backup cIOS, use IOS249 then.\n\n");
+	Out->SetColor(Color_White, true);
+	Out->Print("Wii SoftChip v0.0.1-pre\n\n");
 
 	// Initialize FAT
 	SD->Initialize_FAT();
@@ -114,15 +105,20 @@ SoftChip::SoftChip()
 
 	// Initialize Configuration	
 	Out->SetColor(Color_White, false);
-	Out->Print("Reading Configuration File... ");
+	
+	//TODO: Reenable the output and move it somewhere else
+	//Out->Print("Reading Configuration File... ");
 	if (!Cfg->Read(ConfigData::Default_ConfigFile))
 	{
-		Out->Print("Using defaults.\n\n");
-		Cfg->Save(ConfigData::Default_ConfigFile);
+		//Out->Print("Using defaults.\n\n");
+		if (!Cfg->Save(ConfigData::Default_ConfigFile))
+		{
+			Out->PrintErr("Error: Configuration file could not be saved.\n\n");
+		}
 	}
 	else
 	{
-		Out->Print("Configuration loaded.\n\n");
+		//Out->Print("Configuration loaded.\n\n");
 	}
 
 	// Save IOS Position
@@ -195,6 +191,16 @@ void SoftChip::Run()
 
 			// Run Game
 			Load_Disc();
+		}
+
+		if (NextPhase == Phase_Show_Disclaimer)
+		{
+			Out->Print_Disclaimer();
+			Controls->Press_AnyKey("Press any key to return ...");
+			Out->SetColor(Color_White, false);
+			Out->Reprint();
+
+			NextPhase = Phase_Menu;
 		}
 	}
 
@@ -301,9 +307,10 @@ void SoftChip::Show_Menu()
 
 	Out->SetColor(Color_Yellow, false);
 	Out->Print("--- Main Menu ---\n");
-	Out->Print("> The changes you make here are saved to a Default Configuration File\n");
-	Out->Print("Press the (A) button to continue.\n");
+	Out->Print("> The changes you make here are saved to a Configuration File\n");
+	Out->Print("Press the (A) button to start the game.\n");
 	Out->Print("Press the (+) button to select IOS.\n");
+	Out->Print("Press the (2) button to show the info dialog.\n");
 	Out->Print("Use the D-Pad to change settings.\n\n");
 	Out->SetColor(Color_White, false);
 
@@ -342,6 +349,12 @@ void SoftChip::Show_Menu()
 			NextPhase = Phase_SelectIOS;
 			return;
 		}
+
+		if (Controls->Info.Active)
+		{
+			NextPhase = Phase_Show_Disclaimer;
+			return;
+		}		
 
 		// Update Menu
 		Out->UpdateMenu(Controls);
@@ -429,9 +442,9 @@ void SoftChip::Show_IOSMenu()
 	Out->Print("--- IOS Menu ---\n");
 	Out->Print("> SoftChip will try to load the selected IOS on startup.\n");
 	Out->Print("> If a problem occurs, it'll load the Default IOS %d.\n", Default_IOS);
-	Out->Print("Use the D-Pad to change IOS number.\n");
-	Out->Print("Press the (Up) and (Down) Buttons to go faster.\n");
-	Out->Print("Press the (A) Button to change IOS.\n\n");
+	Out->Print("Press the (A) button to load the selected IOS.\n");
+	Out->Print("Press the (B) button to return to the main menu.\n");
+	Out->Print("Use the D-Pad to change IOS number.\n\n");
 	Out->SetColor(Color_White, false);
 
 	Out->CreateMenu();
@@ -446,12 +459,19 @@ void SoftChip::Show_IOSMenu()
 		if (Controls->Accept.Active)
 		{
             NextPhase = Phase_IOS;
+			Cfg->Data.IOS = nList[oIOS->Index];
 			return;
+		}
+		
+		// Abort
+		if (Controls->Cancel.Active)
+		{
+			NextPhase = Phase_Menu;
+			return;		
 		}
 
 		// Update Menu
 		Out->UpdateMenu(Controls);
-		Cfg->Data.IOS = nList[oIOS->Index];
 
 		VerifyFlags();
         VIDEO_WaitVSync();
@@ -633,8 +653,8 @@ void SoftChip::Load_Disc()
         Out->Print("Payload Information:\n");
         Out->Print("\tRevision:\t%s\n", Loader.Revision);
         Out->Print("\tEntry:\t0x%x\n", (int)Loader.Entry_Point);
-        Out->Print("\tSize:\t%d bytes\n", Loader.Size);
-        Out->Print("\tTrailer:\t%d bytes\n\n", Loader.Trailer_Size);
+        Out->Print("\tSize:\t%u bytes\n", Loader.Size);
+        Out->Print("\tTrailer:\t%u bytes\n\n", Loader.Trailer_Size);
 
         Out->Print("Reading payload.\n");
 

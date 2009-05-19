@@ -637,29 +637,32 @@ void SoftChip::Load_Disc()
 		Log->Write("IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
 
         /* Filling the memory for the apploader, it seems to have an effect on it */
-        *(dword*)Memory::Sys_Magic	= 0x0d15ea5e;
-        *(dword*)Memory::Version	= 1;
-        *(dword*)Memory::Arena_L	= 0x00000000;
-        *(dword*)Memory::Bus_Speed	= 0x0E7BE2C0;
-        *(dword*)Memory::CPU_Speed	= 0x2B73A840;
+		Out->Print("Filling the memory.\n");
+
+        *(dword*)Memory::Sys_Magic			= 0x0d15ea5e;
+        *(dword*)Memory::Version			= 1;
+        *(dword*)Memory::Arena_L			= 0x00000000;
+        *(dword*)Memory::Bus_Speed			= 0x0E7BE2C0;
+        *(dword*)Memory::CPU_Speed			= 0x2B73A840;
+		*(dword*)Memory::Game_ID_Address	= 0x80000000;
 
         // Enable online mode in games
         memcpy((dword*)Memory::Online_Check, (dword*)Memory::Disc_ID, 4);
 		
 		// Write into memory which IOS is used, or fake this information
-		u32 ios;
 		if (Cfg->Data.Fake_IOS_Version)
 		{
-			Out->Print("Writing the information that IOS %u (Rev %u) is loaded into memory\n", Tmd_Buffer[0x18b], 0xffff);
-			ios = Tmd_Buffer[0x18b] * 0x10000 + 0xffff;
+			Out->Print("Writing into memory that IOS %u (Rev %u) is loaded \n", Tmd_Buffer[0x18b], 0xffff);
+			*(dword*)Memory::IOS_Version = Tmd_Buffer[0x18b];
+			*(dword*)Memory::IOS_Revision = 0xffff;
 		} else
 		{
-			Out->Print("Writing the information that IOS %u (Rev %u) is loaded into memory\n", IOS_GetVersion(), IOS_GetRevision());
-			ios = IOS_GetVersion() * 0x10000 + IOS_GetRevision();
+			Out->Print("Writing into memory that IOS %u (Rev %u) is loaded \n", IOS_GetVersion(), IOS_GetRevision());
+			*(dword*)Memory::IOS_Version = IOS_GetVersion();
+			*(dword*)Memory::IOS_Revision = IOS_GetRevision();
 		}
-		*(dword*)0x80003140 = ios;
-		*(dword*)0x80003144 = 0x00062507;
-		
+		*(dword*)Memory::IOS_Magic = 0x00062507;
+			
         // Read apploader header from 0x2440
         static Apploader::Header Loader __attribute__((aligned(0x20)));
         Out->Print("Reading apploader header.\n");

@@ -48,6 +48,10 @@ namespace Memory
 		CPU_Speed		= 0x800000fc,
 		Dol_Params		= 0x800030f0,
 		Online_Check	= 0x80003180,
+		Game_ID_Address	= 0x80003184,
+		IOS_Version		= 0x80003140,
+		IOS_Revision	= 0x80003142,
+		IOS_Magic		= 0x80003144,		
 		Apploader		= 0x81200000,
 		Exit_Stub		= 0x80001800
 	};

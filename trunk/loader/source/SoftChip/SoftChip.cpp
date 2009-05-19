@@ -238,7 +238,7 @@ void SoftChip::Load_IOS()
 		if (IOS_Loaded)
 		{
 			Out->SetColor(Color_Green, true);
-			Out->Print("[+] IOS %d (Rev %d) Loaded\n", IOS_Version, IOS_GetRevision());
+			Out->Print("[+] IOS %u (Rev %u) Loaded\n", IOS_Version, IOS_GetRevision());
 		}
 		else
 		{
@@ -372,6 +372,13 @@ void SoftChip::Show_IOSMenu()
 
 	dword i, Count = 0;
 	dword Cfg_IOS = 0;
+	char Buffer[32];
+
+	signed_blob *TMD = NULL;
+	tmd *t = NULL;
+	u32 TMD_size = 0;
+	u64 title_id = 0;
+	int ret;
 
 	// Get a list of Valid IOSes
 	cIOS *IOS = cIOS::Instance();
@@ -380,7 +387,7 @@ void SoftChip::Show_IOSMenu()
 	// Declare Lists
 	string List[IOS->SysTitles.size()];
 	char nList[IOS->SysTitles.size()];
-
+	
 	// Fill the List
 	for (i = 0; i < IOS->SysTitles.size(); i++)
 	{
@@ -394,12 +401,23 @@ void SoftChip::Show_IOSMenu()
 				break;
 
 			default:	// Valid IOS
-				char Buffer[32];
-				sprintf(Buffer, "IOS%u", IOS->SysTitles[i]);
-
 				if (IOS->SysTitles[i] == Cfg->Data.IOS) Cfg_IOS = Count;
 				nList[Count] = IOS->SysTitles[i];
-				List[Count++] = string(Buffer);
+				
+				// Get tmd to determine the version of the IOS
+				title_id = (((u64)(1) << 32) | (IOS->SysTitles[i]));
+				ret = IOS->GetTMD(title_id, &TMD, &TMD_size);
+				
+				if (ret == 0)
+				{
+					t = (tmd*)SIGNATURE_PAYLOAD(TMD);
+					sprintf(Buffer, "IOS%u (Rev %u) ", IOS->SysTitles[i], t->title_version);
+				} else
+				{
+					sprintf(Buffer, "IOS%u ", IOS->SysTitles[i]);
+				}
+				List[Count] = string(Buffer);
+				Count++;
 		}
 	}
 

@@ -143,6 +143,13 @@ void Console::Print_Disclaimer()
 	printf("or the IOS requested by the game, if you know which one it is.\n");
 	printf("To play backups without hardware modification, use IOS249.\n");
 	printf("\n");
+
+	printf("What does 'Fake IOS version' do:\n");
+	printf("If enabled, it's written into the memory that the IOS requested by the game\n");
+	printf("is loaded and has the revision 65535. If disabled, the correct values\n");
+	printf("are written into the memory. Enabling this option should also remove the\n");
+	printf("002 error and work better than the 'Remove 002 Protection' option.\n");
+	printf("\n");
 }
 
 /*******************************************************************************

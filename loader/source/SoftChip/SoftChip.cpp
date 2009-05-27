@@ -196,6 +196,10 @@ void SoftChip::Run()
 		if (NextPhase == Phase_Show_Disclaimer)
 		{
 			Out->Print_Disclaimer();
+			SetColor(Color_White, false);
+			Controls->Press_AnyKey("Press any key to view help screen ...");
+			Out->Print_Help();
+			SetColor(Color_White, false);
 			Controls->Press_AnyKey("Press any key to return ...");
 			Out->SetColor(Color_White, false);
 			Out->Reprint();
@@ -230,7 +234,15 @@ void SoftChip::Load_IOS()
 		DI->Close();
 
 		IOS_Version = Cfg->Data.IOS;
-		IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
+		
+		if (IOS_Version == IOS_GetVersion())
+		{
+			// Skip unnessecary IOS Reload
+			IOS_Loaded = true;
+		} else
+		{
+			IOS_Loaded = !(IOS_ReloadIOS(IOS_Version) < 0);
+		}
 
 		if (!IOS_Loaded)
 		{
@@ -316,12 +328,14 @@ void SoftChip::Show_Menu()
 
 	Out->CreateMenu();
 	Console::Option *oLang = Out->CreateOption("Game's Language: ", Languages, 12, Cfg->Data.Language + 2);
+	Console::Option *oPCS  = Out->CreateOption("Patch Country Strings: ", BoolOption, 2, Cfg->Data.Country_String_Patching);
 	Console::Option *oMode = Out->CreateOption("Set Video Mode using: ", VModes, 2, !Cfg->Data.SysVMode);
 	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
 	Console::Option *oSlnt = Out->CreateOption("Silent: ", BoolOption, 2, Cfg->Data.Silent);
 	Console::Option *oLogg = Out->CreateOption("Logging: ", BoolOption, 2, Cfg->Data.Logging);
 	Console::Option *o002  = Out->CreateOption("Remove 002 Protection: ", BoolOption, 2, Cfg->Data.Remove_002);
 	Console::Option *oIOS  = Out->CreateOption("Fake IOS version: ", BoolOption, 2, Cfg->Data.Fake_IOS_Version);
+	Console::Option *oLRI  = Out->CreateOption("Load requested IOS: ", BoolOption, 2, Cfg->Data.Load_requested_IOS);
 
     while (true)
     {
@@ -366,6 +380,8 @@ void SoftChip::Show_Menu()
 		Cfg->Data.Logging = oLogg->Index;
 		Cfg->Data.Remove_002 = o002->Index;
 		Cfg->Data.Fake_IOS_Version = oIOS->Index;
+		Cfg->Data.Load_requested_IOS = oLRI->Index;
+		Cfg->Data.Country_String_Patching = oPCS->Index;
 		
 		VerifyFlags();
         VIDEO_WaitVSync();
@@ -493,6 +509,7 @@ void SoftChip::Load_Disc()
     static Wii_Disc::Header					Header			__attribute__((aligned(0x20)));
     static Wii_Disc::Partition_Descriptor	Descriptor		__attribute__((aligned(0x20)));
     static Wii_Disc::Partition_Info			Partition_Info	__attribute__((aligned(0x20)));
+	static Apploader::Header				Loader			__attribute__((aligned(0x20)));
 
     memset(&Header, 0, sizeof(Wii_Disc::Header));
     memset(&Descriptor, 0, sizeof(Wii_Disc::Partition_Descriptor));
@@ -518,11 +535,12 @@ void SoftChip::Load_Disc()
 		}
 
 		Out->Print("Loading Game...\n");
-        DI->Reset();
+
+		DI->Reset();
 
         // Read the discID into the memory
 		memset((dvddiskid *)(Memory::Disc_ID), 0, 0x20);
-        DI->Read_DiscID((dvddiskid *)(Memory::Disc_ID));
+		DI->Read_DiscID((dvddiskid *)(Memory::Disc_ID));
 
 		if (*(dword*)(Memory::Disc_ID) == 0x10001 || *(dword*)(Memory::Disc_ID) == 0x10000)
 		{
@@ -636,6 +654,68 @@ void SoftChip::Load_Disc()
 		Out->Print("IOS requested by the game: %u\n", Tmd_Buffer[0x18b]);
 		Log->Write("IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
 
+		// Load IOS requested by the game if selected
+		if (Cfg->Data.Load_requested_IOS == true && IOS_GetVersion() != Tmd_Buffer[0x18b])
+		{		
+			Out->Print("Stopping drive...\n");
+			// Stop Motor
+			DI->Stop_Motor();
+
+			DI->Close_Partition();
+			DI->Close();
+			
+			// Release FAT and Wiimotes
+			SD->Release_FAT();
+			Controls->Terminate();
+			
+			Out->Print("Loading IOS...\n");
+			if (IOS_ReloadIOS(Tmd_Buffer[0x18b]) < 0)
+			{
+				Out->PrintErr("Error loading IOS%u\n", Tmd_Buffer[0x18b]);
+				Log->Write("Error loading IOS%u\n", Tmd_Buffer[0x18b]);
+			} else
+			{
+				Out->Print("Loading IOS%u successful\n", Tmd_Buffer[0x18b]);
+				Log->Write("Loading IOS%u successful\n", Tmd_Buffer[0x18b]);
+			}
+			
+			if (!DI->Initialize())
+			{
+				Out->PrintErr("[-] Error Initializing DIP-Module.\n");
+				throw "Error Initializing DIP";
+			}
+
+			// Re-Init FAT and Wiimotes
+			SD->Initialize_FAT();
+			Controls->Initialize();
+			
+			if (DI->Verify_Cover(&Disc_Inserted) < 0)
+			{
+				throw "Verify_Cover failed";
+			}
+			
+			if (!Disc_Inserted)
+			{
+				Out->SetSilent(false);
+				Out->Print("Please insert a Disc.\n");
+				DI->Wait_CoverClose();
+			}
+
+			Out->Print("Restart Loading Game...\n");
+			DI->Reset();
+
+			// Read the discID into the memory
+			DI->Read_DiscID((dvddiskid *)(Memory::Disc_ID));
+
+			// Reopen Partition
+			if (DI->Open_Partition(Partition_Info.Offset, 0,0,0, Tmd_Buffer) < 0)
+			{
+				Out->PrintErr("[-] Error opening partition.\n\n");
+				throw "Open Error";
+			}
+			Out->Print("[+] Partition opened successfully.\n");
+		}
+
         /* Filling the memory for the apploader, it seems to have an effect on it */
 		Out->Print("Filling the memory.\n");
 
@@ -662,9 +742,8 @@ void SoftChip::Load_Disc()
 			*(dword*)Memory::IOS_Revision = IOS_GetRevision();
 		}
 		*(dword*)Memory::IOS_Magic = 0x00062507;
-			
+
         // Read apploader header from 0x2440
-        static Apploader::Header Loader __attribute__((aligned(0x20)));
         Out->Print("Reading apploader header.\n");
         DI->Read(&Loader, sizeof(Apploader::Header), Wii_Disc::Offsets::Apploader);
         DCFlushRange(&Loader, 0x20);
@@ -702,6 +781,7 @@ void SoftChip::Load_Disc()
         int		Section_Size;
         int		Partition_Offset;
 		bool	Lang_Patched = (Cfg->Data.Language == -1);
+		bool	Country_Strings_Patched = (!Cfg->Data.Country_String_Patching);
 		bool	Removed_002 = (!Cfg->Data.Remove_002);
 
         Out->Print("Loading.\t\t\n");
@@ -718,6 +798,7 @@ void SoftChip::Load_Disc()
             // main.dol Patching
 			// TODO: Search the patch offsets only in the main.dol
 			if (!Lang_Patched) Lang_Patched = Set_GameLanguage(Address, Section_Size, *(char*)Memory::Disc_Region);
+			if (!Country_Strings_Patched) Country_Strings_Patched = Patch_Country_Strings(Address, Section_Size, *(char*)Memory::Disc_Region);
 			if (!Removed_002) Removed_002 = Remove_002_Protection(Address, Section_Size);
         }
 		
@@ -739,7 +820,7 @@ void SoftChip::Load_Disc()
 		}
 
         // Retrieve application entry point
-        void* Entry = Exit();
+       void* Entry = Exit();
 
         Out->Print("Launching Application!\n\n");
 
@@ -756,7 +837,7 @@ void SoftChip::Load_Disc()
 		SD->Release_FAT();
 
         // Cleanup loader information
-        DI->Close();
+		DI->Close();
 
 		// Identify as the game
 		if (IS_VALID_SIGNATURE(Certs) 	&& IS_VALID_SIGNATURE(Tmd) 	&& IS_VALID_SIGNATURE(Ticket) 
@@ -798,8 +879,8 @@ void SoftChip::Load_Disc()
 		// Stop Drive
 		DI->Stop_Motor();
 
-		// Return to Menu
-		NextPhase = Phase_Menu;
+		// Return to IOS Loading, if another IOS was loaded, because it was requested, this is needed
+		NextPhase = Phase_IOS;
 
 		// Wait User
 		Controls->Press_AnyKey("Press Any Key to Continue...\n\n");
@@ -1003,6 +1084,98 @@ bool SoftChip::Remove_002_Protection(void *Address, int Size)
 
 	return false;
 }
+
+
+/*******************************************************************************
+ * Patch_Country_Strings: Patches the Country Strings
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns true if patched
+ *
+ ******************************************************************************/
+
+bool SoftChip::Patch_Country_Strings(void *Address, int Size, char discregion)
+{
+	u8 SearchPattern[4];
+	u8 PatchData[2];
+	u8 *Addr			= (u8*)Address;
+
+	int wiiregion = CONF_GetRegion();
+
+	switch (wiiregion)
+	{
+		case CONF_REGION_JP:
+			SearchPattern[0] = 0x00;
+			SearchPattern[1] = 0x4A; // J
+			SearchPattern[2] = 0x50; // P
+			SearchPattern[3] = 0x00;
+			break;
+		case CONF_REGION_EU:
+			SearchPattern[0] = 0x02;
+			SearchPattern[1] = 0x45; // E
+			SearchPattern[2] = 0x55; // U
+			SearchPattern[3] = 0x00;
+			break;
+		case CONF_REGION_KR:
+			SearchPattern[0] = 0x04;
+			SearchPattern[1] = 0x4B; // K
+			SearchPattern[2] = 0x52; // R
+			SearchPattern[3] = 0x00;
+			break;
+		case CONF_REGION_CN:
+			SearchPattern[0] = 0x05;
+			SearchPattern[1] = 0x43; // C
+			SearchPattern[2] = 0x4E; // N
+			SearchPattern[3] = 0x00;
+			break;
+		case CONF_REGION_US:
+		default:
+			SearchPattern[0] = 0x01;
+			SearchPattern[1] = 0x55; // U
+			SearchPattern[2] = 0x53; // S
+			SearchPattern[3] = 0x00;
+	}
+
+	switch (discregion) 
+	{
+		case Wii_Disc::Regions::NTSC_Japan:
+			PatchData[0] = 0x4A; // J
+			PatchData[1] = 0x50; // P
+			break;
+
+		case Wii_Disc::Regions::PAL_Default:
+		case Wii_Disc::Regions::PAL_France:
+		case Wii_Disc::Regions::PAL_Germany:
+		case Wii_Disc::Regions::Euro_X:
+		case Wii_Disc::Regions::Euro_Y:
+			PatchData[0] = 0x45; // E
+			PatchData[1] = 0x55; // U
+			break;
+
+		case Wii_Disc::Regions::NTSC_USA:
+		default:
+			PatchData[0] = 0x55; // U
+			PatchData[1] = 0x53; // S
+	}
+
+	while (Size >= 4)
+	{
+		if (Addr[0] == SearchPattern[0] && Addr[1] == SearchPattern[1] && Addr[2] == SearchPattern[2] && Addr[3] == SearchPattern[3])
+		{
+			Addr += 1;
+			*Addr = PatchData[0];
+			Addr += 1;
+			*Addr = PatchData[1];
+			return true;
+		} else
+		{
+			Addr += 4;
+			Size -= 4;
+		}
+	}
+	return false;
+}
+
 
 /*******************************************************************************
  * Standby: Put the console in standby mode

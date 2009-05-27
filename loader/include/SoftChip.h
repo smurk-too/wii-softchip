@@ -76,6 +76,7 @@ private:
 	void	Set_VideoMode();										// Set Video Mode
 	bool	Set_GameLanguage(void *Address, int Size, char Region);// Patch Game's Language
 	bool	Remove_002_Protection(void *Address, int Size);			// Remove the 002 protection
+	bool	Patch_Country_Strings(void *Address, int Size, char discregion);
 
 protected:
 	SoftChip();

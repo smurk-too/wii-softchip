@@ -29,12 +29,26 @@
 
 namespace ConfigData
 {
-	const byte LastVersion = 4;
+	const byte LastVersion = 5;
 	const char Signature[] = "B5662343D78AD6D";
 	const char SoftChip_Folder[] = "sd:/SoftChip";
 	const char Default_ConfigFile[] = "sd:/SoftChip/Default.cfg";
 	const char Default_LogFile[] = "sd:/SoftChip/Default.log";
 	
+	struct Ver5
+	{
+		char		IOS;
+		signed char	Language;
+		bool		SysVMode;
+		bool		AutoBoot;
+		bool		Silent;
+		bool		Logging;
+		bool		Remove_002;
+		bool		Fake_IOS_Version;
+		bool		Load_requested_IOS;
+		bool		Country_String_Patching;
+	} __attribute__((packed));
+
 	struct Ver4
 	{
 		char		IOS;
@@ -86,7 +100,7 @@ public:
 	bool Read(const char* Path);
 	bool Save(const char* Path);
 
-	ConfigData::Ver4 Data;
+	ConfigData::Ver5 Data;
 
 protected:
 	virtual bool Parse(FILE *fp);
@@ -107,6 +121,12 @@ public:
 
 //--------------------------------------
 // Derived Configurations
+
+class ConfigVer5 : public Configuration
+{
+protected:
+	bool Parse(FILE *fp);
+};
 
 class ConfigVer4 : public Configuration
 {

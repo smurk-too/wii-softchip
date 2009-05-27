@@ -42,6 +42,7 @@ public:
 	int Set_OffsetBase(unsigned int Base);
 	int Get_OffsetBase(unsigned int* Base);
 	int	Open_Partition(unsigned int Offset, void* Ticket, void* Certificate, unsigned int Cert_Len, void* Out);
+	int Close_Partition();
 	int Stop_Motor();
 	void Close();
 

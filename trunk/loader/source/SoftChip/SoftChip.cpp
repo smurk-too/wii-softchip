@@ -196,10 +196,10 @@ void SoftChip::Run()
 		if (NextPhase == Phase_Show_Disclaimer)
 		{
 			Out->Print_Disclaimer();
-			SetColor(Color_White, false);
+			Out->SetColor(Color_White, false);
 			Controls->Press_AnyKey("Press any key to view help screen ...");
 			Out->Print_Help();
-			SetColor(Color_White, false);
+			Out->SetColor(Color_White, false);
 			Controls->Press_AnyKey("Press any key to return ...");
 			Out->SetColor(Color_White, false);
 			Out->Reprint();

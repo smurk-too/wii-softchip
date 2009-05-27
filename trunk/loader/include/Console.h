@@ -70,6 +70,7 @@ public:
 	void	SetSilent(bool Enable);					// Enable or Disable Silent Option
 	void	Clear();								// Clear the Console
 	void	Print_Disclaimer();						// Print the Disclaimer
+	void 	Print_Help();							// Print the Help Screen
 	void	Reprint();								// Print the complete Output again
 
 	// Cursor

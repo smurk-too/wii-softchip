@@ -133,22 +133,55 @@ void Console::Print_Disclaimer()
 	SetColor(Color_White, true);
 	printf("Official Homepage: http://www.softchip-mod.com/\n");
 	printf("Sourcecode available at: http://code.google.com/p/wii-softchip/\n");
-	printf("Official irc chatroom: irc://freenode/SoftChip\n");
+	printf("Official irc chatroom: irc://irc.freenode.org/SoftChip\n");
 	printf("\n");
-	
-	// IOS Notice
+}
+
+
+/*******************************************************************************
+ * Print_Help: Print the Help Screen
+ * -----------------------------------------------------------------------------
+ * Return Values:
+ *	returns void
+ *
+ ******************************************************************************/
+
+void Console::Print_Help()
+{
+  //printf("123456789012345678901234567890123456789012345678901234567890123456789012345"); // Test line to see how much space can be used
+	// Clear Console
+	printf("\x1b[J");
+
 	SetColor(Color_White, false);
+	printf("What is required to play backups on Wiis wihout hardware modification?\n");
+	printf("To play backups on these Wiis, you need to have an IOS installed that\n");
+	printf("allows to read from DVD-Rs as if they were retail discs. One of Waninkoko's\n");
+	printf("cIOS for exampe. DVD+Rs need to be booktyped to dvd-rom in order to work.\n");
+	printf("\n");
+
 	printf("Which IOS to use:\n");
-	printf("To play retail discs or backups with hardware modification, use IOS36\n");
-	printf("or the IOS requested by the game, if you know which one it is.\n");
-	printf("To play backups without hardware modification, use IOS249.\n");
+	printf("To play retail discs or backups with hardware modification, use the\n");
+	printf("'Load requested IOS' function to always use the correct IOS.\n");
+	printf("To play backups without hardware modification, use IOS249(the cIOS).\n");
 	printf("\n");
 
 	printf("What does 'Fake IOS version' do:\n");
 	printf("If enabled, it's written into the memory that the IOS requested by the game\n");
 	printf("is loaded and has the revision 65535. If disabled, the correct values\n");
-	printf("are written into the memory. Enabling this option should also remove the\n");
-	printf("002 error and work better than the 'Remove 002 Protection' option.\n");
+	printf("are written into the memory. Enabling this option removes the 002 error\n");
+	printf("in a better than the 'Remove 002 Protection' option.\n");
+	printf("\n");
+	
+	printf("What's 'Autoboot'?\n");
+	printf("If enabled, SoftChip automatically starts the insterted disc on startup. If\n");
+	printf("the 'Silent' option is also enabled, the screen stays black while starting\n");
+	printf("the game. The autoboot can be canceled by tapping the '1' button.\n");
+	printf("\n");
+
+	printf("What's 'Patch Country Strings'?\n");
+	printf("This is an option for import games only. When encountering problems with an\n");
+	printf("import game, this option might be required. Mostly japanese users need\n");
+	printf("this to play certain PAL and US games.\n");
 	printf("\n");
 }
 

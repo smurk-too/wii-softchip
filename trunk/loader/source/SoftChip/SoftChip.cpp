@@ -447,6 +447,7 @@ void SoftChip::Show_IOSMenu()
 				{
 					sprintf(Buffer, "IOS%u ", IOS->SysTitles[i]);
 				}
+				free(TMD);
 				List[Count] = string(Buffer);
 				Count++;
 		}
@@ -651,8 +652,8 @@ void SoftChip::Load_Disc()
         Out->Print("Tmd at: 0x%x\n", reinterpret_cast<dword>(Tmd));
 		
 		Out->Print("[+] Partition opened successfully.\n");
-		Out->Print("IOS requested by the game: %u\n", Tmd_Buffer[0x18b]);
-		Log->Write("IOS requested by the game: %u\r\n", Tmd_Buffer[0x18b]);
+		Out->Print("IOS requested by the game inside the tmd: %u\n", Tmd_Buffer[0x18b]);
+		Log->Write("IOS requested by the game inside the tmd: %u\r\n", Tmd_Buffer[0x18b]);
 
 		// Load IOS requested by the game if selected
 		if (Cfg->Data.Load_requested_IOS == true && IOS_GetVersion() != Tmd_Buffer[0x18b])
@@ -726,23 +727,13 @@ void SoftChip::Load_Disc()
         *(dword*)Memory::CPU_Speed			= 0x2B73A840;
 		*(dword*)Memory::Game_ID_Address	= 0x80000000;
 
-        // Enable online mode in games
+		// Write into memory which IOS is loaded
+		*(word*)Memory::IOS_Version = IOS_GetVersion();
+		*(word*)Memory::IOS_Revision = IOS_GetRevision();
+
+       // Enable online mode in games
         memcpy((dword*)Memory::Online_Check, (dword*)Memory::Disc_ID, 4);
 		
-		// Write into memory which IOS is used, or fake this information
-		if (Cfg->Data.Fake_IOS_Version)
-		{
-			Out->Print("Writing into memory that IOS %u (Rev %u) is loaded \n", Tmd_Buffer[0x18b], 0xffff);
-			*(dword*)Memory::IOS_Version = Tmd_Buffer[0x18b];
-			*(dword*)Memory::IOS_Revision = 0xffff;
-		} else
-		{
-			Out->Print("Writing into memory that IOS %u (Rev %u) is loaded \n", IOS_GetVersion(), IOS_GetRevision());
-			*(dword*)Memory::IOS_Version = IOS_GetVersion();
-			*(dword*)Memory::IOS_Revision = IOS_GetRevision();
-		}
-		*(dword*)Memory::IOS_Magic = 0x00062507;
-
         // Read apploader header from 0x2440
         Out->Print("Reading apploader header.\n");
         DI->Read(&Loader, sizeof(Apploader::Header), Wii_Disc::Offsets::Apploader);
@@ -801,6 +792,7 @@ void SoftChip::Load_Disc()
 			if (!Country_Strings_Patched) Country_Strings_Patched = Patch_Country_Strings(Address, Section_Size, *(char*)Memory::Disc_Region);
 			if (!Removed_002) Removed_002 = Remove_002_Protection(Address, Section_Size);
         }
+		Out->Print("\n");
 		
 		if ((Cfg->Data.Language != -1) && (!Lang_Patched))
 		{
@@ -820,7 +812,17 @@ void SoftChip::Load_Disc()
 		}
 
         // Retrieve application entry point
-       void* Entry = Exit();
+		void* Entry = Exit();
+
+		Out->Print("IOS requested by the apploader: %u (Rev %u)\n", 	*(word*)Memory::Requested_IOS_Version, *(word*)Memory::Requested_IOS_Revision);
+		Log->Write("IOS requested by the apploader: %u (Rev %u)\r\n", 	*(word*)Memory::Requested_IOS_Version, *(word*)Memory::Requested_IOS_Revision);
+
+		if (Cfg->Data.Fake_IOS_Version)
+		{
+			Out->Print("Faking IOS Version in memory\n");
+			*(word*)Memory::IOS_Version 	= *(word*)Memory::Requested_IOS_Version;
+			*(word*)Memory::IOS_Revision 	= *(word*)Memory::Requested_IOS_Revision;
+		}
 
         Out->Print("Launching Application!\n\n");
 
@@ -853,7 +855,7 @@ void SoftChip::Load_Disc()
 			{
 				Out->Print("ES_Identify successful\n");
 			}			
-		}
+		}		
 		
         // Shutdown libogc services
         SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);

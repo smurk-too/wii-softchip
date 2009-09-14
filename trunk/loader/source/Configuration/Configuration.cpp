@@ -178,7 +178,7 @@ bool Configuration::Parse(FILE *fp)	// Default Settings
 	Data.Silent = false;
 	Data.Logging = false;
 	Data.Remove_002 = false;
-	Data.Fake_IOS_Version = false;
+	Data.Fake_IOS_Version = true;
 	Data.Load_requested_IOS = false;
 	Data.Country_String_Patching = false;
 	

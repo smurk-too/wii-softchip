@@ -330,12 +330,12 @@ void SoftChip::Show_Menu()
 	Console::Option *oLang = Out->CreateOption("Game's Language: ", Languages, 12, Cfg->Data.Language + 2);
 	Console::Option *oPCS  = Out->CreateOption("Patch Country Strings: ", BoolOption, 2, Cfg->Data.Country_String_Patching);
 	Console::Option *oMode = Out->CreateOption("Set Video Mode using: ", VModes, 2, !Cfg->Data.SysVMode);
+	//Console::Option *o002  = Out->CreateOption("Remove 002 Protection: ", BoolOption, 2, Cfg->Data.Remove_002);
+	Console::Option *oIOS  = Out->CreateOption("Fake IOS version: ", BoolOption, 2, Cfg->Data.Fake_IOS_Version);
+	Console::Option *oLRI  = Out->CreateOption("Load requested IOS: ", BoolOption, 2, Cfg->Data.Load_requested_IOS);
 	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
 	Console::Option *oSlnt = Out->CreateOption("Silent: ", BoolOption, 2, Cfg->Data.Silent);
 	Console::Option *oLogg = Out->CreateOption("Logging: ", BoolOption, 2, Cfg->Data.Logging);
-	Console::Option *o002  = Out->CreateOption("Remove 002 Protection: ", BoolOption, 2, Cfg->Data.Remove_002);
-	Console::Option *oIOS  = Out->CreateOption("Fake IOS version: ", BoolOption, 2, Cfg->Data.Fake_IOS_Version);
-	Console::Option *oLRI  = Out->CreateOption("Load requested IOS: ", BoolOption, 2, Cfg->Data.Load_requested_IOS);
 
     while (true)
     {
@@ -378,7 +378,7 @@ void SoftChip::Show_Menu()
 		Cfg->Data.AutoBoot = oBoot->Index;
 		Cfg->Data.Silent = oSlnt->Index;
 		Cfg->Data.Logging = oLogg->Index;
-		Cfg->Data.Remove_002 = o002->Index;
+		//Cfg->Data.Remove_002 = o002->Index;
 		Cfg->Data.Fake_IOS_Version = oIOS->Index;
 		Cfg->Data.Load_requested_IOS = oLRI->Index;
 		Cfg->Data.Country_String_Patching = oPCS->Index;
@@ -727,10 +727,6 @@ void SoftChip::Load_Disc()
         *(dword*)Memory::CPU_Speed			= 0x2B73A840;
 		*(dword*)Memory::Game_ID_Address	= 0x80000000;
 
-		// Write into memory which IOS is loaded
-		*(word*)Memory::IOS_Version = IOS_GetVersion();
-		*(word*)Memory::IOS_Revision = IOS_GetRevision();
-
        // Enable online mode in games
         memcpy((dword*)Memory::Online_Check, (dword*)Memory::Disc_ID, 4);
 		
@@ -773,7 +769,7 @@ void SoftChip::Load_Disc()
         int		Partition_Offset;
 		bool	Lang_Patched = (Cfg->Data.Language == -1);
 		bool	Country_Strings_Patched = (!Cfg->Data.Country_String_Patching);
-		bool	Removed_002 = (!Cfg->Data.Remove_002);
+		//bool	Removed_002 = (!Cfg->Data.Remove_002);
 
         Out->Print("Loading.\t\t\n");
 
@@ -790,7 +786,7 @@ void SoftChip::Load_Disc()
 			// TODO: Search the patch offsets only in the main.dol
 			if (!Lang_Patched) Lang_Patched = Set_GameLanguage(Address, Section_Size, *(char*)Memory::Disc_Region);
 			if (!Country_Strings_Patched) Country_Strings_Patched = Patch_Country_Strings(Address, Section_Size, *(char*)Memory::Disc_Region);
-			if (!Removed_002) Removed_002 = Remove_002_Protection(Address, Section_Size);
+			//if (!Removed_002) Removed_002 = Remove_002_Protection(Address, Section_Size);
         }
 		Out->Print("\n");
 		
@@ -799,6 +795,7 @@ void SoftChip::Load_Disc()
 			Log->Write("Error: Did not patch the language, pattern not found\r\n");
 		}
 
+		/*
 		if (Cfg->Data.Remove_002)
 		{
 			if (Removed_002)
@@ -810,6 +807,7 @@ void SoftChip::Load_Disc()
 				Log->Write("002 error pattern not found\r\n");
 			}
 		}
+		*/
 
         // Retrieve application entry point
 		void* Entry = Exit();
@@ -1061,7 +1059,7 @@ bool SoftChip::Set_GameLanguage(void *Address, int Size, char Region)
  *	returns true if patched
  *
  ******************************************************************************/
-
+/*
 bool SoftChip::Remove_002_Protection(void *Address, int Size)
 {
 	unsigned int SearchPattern[3]	= { 0x2C000000, 0x40820214, 0x3C608000 };
@@ -1086,6 +1084,7 @@ bool SoftChip::Remove_002_Protection(void *Address, int Size)
 
 	return false;
 }
+*/
 
 
 /*******************************************************************************

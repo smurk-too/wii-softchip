@@ -146,7 +146,7 @@ s32 cIOS::GetTMD(u64 TicketID, signed_blob **Output, u32 *Length)
 		return ret;
 
 	/* Allocate memory */
-	TMD = (signed_blob*)memalign(32, TMD_Length);
+	TMD = (signed_blob*)memalign(32, (TMD_Length+31)&(~31));
 	if (!TMD)
 		return IPC_ENOMEM;
 

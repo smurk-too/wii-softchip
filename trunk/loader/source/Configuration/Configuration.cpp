@@ -81,6 +81,10 @@ bool Configuration::Read(const char *Path)
 		// Get File Version		
 		switch (Buffer[15]) 
 		{
+			case 6:		// Version 6
+				Parser = new ConfigVer6();
+				break;
+
 			case 5:		// Version 5
 				Parser = new ConfigVer5();
 				break;
@@ -172,26 +176,50 @@ bool Configuration::Save(const char* Path)
 bool Configuration::Parse(FILE *fp)	// Default Settings
 {
 	Data.IOS = Default_IOS;
-	Data.Language = -2;
+	Data.Language = -1; // System Default
 	Data.SysVMode = false;
 	Data.AutoBoot = false;
 	Data.Silent = false;
 	Data.Logging = false;
-	Data.Remove_002 = false;
+	Data.Remove_002 = false; // Not used anymore
 	Data.Fake_IOS_Version = true;
 	Data.Load_requested_IOS = false;
 	Data.Country_String_Patching = false;
+	Data.SamNMaxFix = true;
 	
 	return true;
 }
 
-bool ConfigVer5::Parse(FILE *fp)	// Ver5 Settings
+bool ConfigVer6::Parse(FILE *fp)	// Ver5 Settings
 {
 	// Get File Data
 	if (fread(&Data, 1, sizeof(Data), fp) != sizeof(Data))
 		return false;
 	else
 		return true;
+}
+
+bool ConfigVer5::Parse(FILE *fp)	// Ver4 Settings
+{
+	// Get File Data
+	ConfigData::Ver5 Temp;
+	if (fread(&Temp, 1, sizeof(Data), fp) != sizeof(Data))
+		return false;
+
+	// Convert
+	Configuration::Parse(0);
+	Data.IOS = Temp.IOS;
+	Data.Language = Temp.Language;
+	Data.AutoBoot = Temp.AutoBoot;
+	Data.SysVMode = Temp.SysVMode;
+	Data.Silent = Temp.Silent;
+	Data.Logging = Temp.Logging;
+	Data.Remove_002 = Temp.Remove_002;
+	Data.Fake_IOS_Version = Temp.Fake_IOS_Version;
+	Data.Country_String_Patching = Temp.Country_String_Patching;
+	Data.Load_requested_IOS = Temp.Load_requested_IOS;
+
+	return true;
 }
 
 bool ConfigVer4::Parse(FILE *fp)	// Ver4 Settings

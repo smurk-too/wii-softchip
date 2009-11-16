@@ -27,6 +27,8 @@
 
 // static void Silent_Report(const char* Args, ...){}		// Blank apploader reporting function
 
+extern "C" void settime(u64);
+
 //--------------------------------------
 // SoftChip Class
 
@@ -95,7 +97,7 @@ SoftChip::SoftChip()
 	// Banner (TODO: Change to an image)
 	
 	Out->SetColor(Color_White, true);
-	Out->Print("Wii SoftChip v0.0.1-pre\n\n");
+	Out->Print("Wii SoftChip r101\n\n");
 
 	// Initialize FAT
 	SD->Initialize_FAT();
@@ -333,6 +335,8 @@ void SoftChip::Show_Menu()
 	//Console::Option *o002  = Out->CreateOption("Remove 002 Protection: ", BoolOption, 2, Cfg->Data.Remove_002);
 	Console::Option *oIOS  = Out->CreateOption("Fake IOS version: ", BoolOption, 2, Cfg->Data.Fake_IOS_Version);
 	Console::Option *oLRI  = Out->CreateOption("Load requested IOS: ", BoolOption, 2, Cfg->Data.Load_requested_IOS);
+	Console::Option *oSAM  = Out->CreateOption("Sam & Max fix: ", BoolOption, 2, Cfg->Data.SamNMaxFix);
+	
 	Console::Option *oBoot = Out->CreateOption("Autoboot: ", BoolOption, 2, Cfg->Data.AutoBoot);
 	Console::Option *oSlnt = Out->CreateOption("Silent: ", BoolOption, 2, Cfg->Data.Silent);
 	Console::Option *oLogg = Out->CreateOption("Logging: ", BoolOption, 2, Cfg->Data.Logging);
@@ -382,7 +386,7 @@ void SoftChip::Show_Menu()
 		Cfg->Data.Fake_IOS_Version = oIOS->Index;
 		Cfg->Data.Load_requested_IOS = oLRI->Index;
 		Cfg->Data.Country_String_Patching = oPCS->Index;
-		
+		Cfg->Data.SamNMaxFix = oSAM->Index;
 		VerifyFlags();
         VIDEO_WaitVSync();
     }
@@ -725,9 +729,13 @@ void SoftChip::Load_Disc()
         *(dword*)Memory::Arena_L			= 0x00000000;
         *(dword*)Memory::Bus_Speed			= 0x0E7BE2C0;
         *(dword*)Memory::CPU_Speed			= 0x2B73A840;
-		*(dword*)Memory::Game_ID_Address	= 0x80000000;
 
-       // Enable online mode in games
+		if (Cfg->Data.SamNMaxFix)
+		{
+			*(dword*)Memory::Game_ID_Address	= 0x80000000;
+		}		
+
+		// Enable online mode in games
         memcpy((dword*)Memory::Online_Check, (dword*)Memory::Disc_ID, 4);
 		
         // Read apploader header from 0x2440

@@ -17,6 +17,7 @@
 // Includes
 
 #include <ogc/lwp_watchdog.h>
+#include <string.h>
 
 #include "Memory_Map.h"
 #include "WiiDisc.h"

@@ -16,6 +16,7 @@
 // Includes
 
 #include <string>
+#include <string.h>
 
 #include "Configuration.h"
 

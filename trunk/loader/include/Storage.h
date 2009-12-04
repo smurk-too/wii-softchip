@@ -19,6 +19,7 @@
 
 #include <fat.h>
 #include <dirent.h>
+#include <stdio.h>
 
 //--------------------------------------
 // Storage Class

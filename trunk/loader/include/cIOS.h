@@ -25,7 +25,21 @@
 #include <algorithm>
 #include <vector>
 #include <malloc.h>
-#include <gccore.h>
+//#include <gccore.h>
+#include <ogc/ios.h>
+#include <ogc/isfs.h>
+#include <ogc/video.h>
+#include <ogc/system.h>
+#include <ogc/consol.h>
+#include <ogc/ios.h>
+#include <ogc/es.h>
+#include <ogc/ipc.h>
+#include <ogc/stm.h>
+#include <ogc/color.h>
+#include <ogc/cache.h>
+#include <ogc/conf.h>
+#include <ogc/consol.h>
+
 
 using namespace std;
 
